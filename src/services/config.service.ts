@@ -130,6 +130,95 @@ export class ConfigService {
   getConfigPath(): string {
     return this.configPath;
   }
+
+  async save(config: Config): Promise<void> {
+    const result = ConfigSchema.safeParse(config);
+    if (!result.success) {
+      throw new Error(`Invalid configuration: ${result.error.message}`);
+    }
+    await writeFile(this.configPath, JSON.stringify(config, null, 2), 'utf-8');
+    this.config = config;
+  }
+
+  async addServer(name: string, serverConfig: ServerConfig): Promise<void> {
+    const config = await this.load();
+    if (config.servers[name]) {
+      throw new Error(`Server '${name}' already exists`);
+    }
+    config.servers[name] = serverConfig;
+    await this.save(config);
+  }
+
+  async updateServer(name: string, serverConfig: ServerConfig): Promise<void> {
+    const config = await this.load();
+    if (!config.servers[name]) {
+      throw new Error(`Server '${name}' not found`);
+    }
+    config.servers[name] = serverConfig;
+    await this.save(config);
+  }
+
+  async deleteServer(name: string): Promise<void> {
+    const config = await this.load();
+    if (!config.servers[name]) {
+      throw new Error(`Server '${name}' not found`);
+    }
+    delete config.servers[name];
+    await this.save(config);
+  }
+
+  async addServerType(name: string, typeConfig: ServerTypeConfig): Promise<void> {
+    const config = await this.load();
+    if (config.server_types[name]) {
+      throw new Error(`Server type '${name}' already exists`);
+    }
+    config.server_types[name] = typeConfig;
+    await this.save(config);
+  }
+
+  async updateServerType(name: string, typeConfig: ServerTypeConfig): Promise<void> {
+    const config = await this.load();
+    if (!config.server_types[name]) {
+      throw new Error(`Server type '${name}' not found`);
+    }
+    config.server_types[name] = typeConfig;
+    await this.save(config);
+  }
+
+  async deleteServerType(name: string): Promise<void> {
+    const config = await this.load();
+    if (!config.server_types[name]) {
+      throw new Error(`Server type '${name}' not found`);
+    }
+    const serversUsingType = Object.entries(config.servers)
+      .filter(([, s]) => s.type === name)
+      .map(([n]) => n);
+    if (serversUsingType.length > 0) {
+      throw new Error(`Cannot delete: type used by servers: ${serversUsingType.join(', ')}`);
+    }
+    delete config.server_types[name];
+    await this.save(config);
+  }
+
+  async getServerTypeNames(): Promise<string[]> {
+    const config = await this.load();
+    return Object.keys(config.server_types);
+  }
+
+  async isTypeInUse(typeName: string): Promise<boolean> {
+    const config = await this.load();
+    return Object.values(config.servers).some(s => s.type === typeName);
+  }
+
+  async getAllServers(): Promise<Record<string, ServerConfig>> {
+    const config = await this.load();
+    return config.servers;
+  }
+
+  async getAllServerTypes(): Promise<Record<string, ServerTypeConfig>> {
+    const config = await this.load();
+    return config.server_types;
+  }
 }
 
 export const configService = new ConfigService();

@@ -36,3 +36,48 @@ export function validatePort(port: number): ValidationResult {
 
   return { valid: true };
 }
+
+const MEMORY_PATTERN = /^\d+[MmGg]$/;
+
+export function validateMemoryFormat(memory: string): ValidationResult {
+  if (!memory || memory.trim() === '') {
+    return { valid: false, error: 'Memory cannot be empty' };
+  }
+
+  if (!MEMORY_PATTERN.test(memory)) {
+    return { valid: false, error: 'Memory format must be like "2G" or "512M"' };
+  }
+
+  return { valid: true };
+}
+
+export function validatePath(path: string): ValidationResult {
+  if (!path || path.trim() === '') {
+    return { valid: false, error: 'Path cannot be empty' };
+  }
+
+  if (!path.startsWith('/')) {
+    return { valid: false, error: 'Path must be absolute (start with /)' };
+  }
+
+  return { valid: true };
+}
+
+export function validateServerTypeName(name: string): ValidationResult {
+  if (!name || name.trim() === '') {
+    return { valid: false, error: 'Type name cannot be empty' };
+  }
+
+  if (name.length > MAX_SERVER_NAME_LENGTH) {
+    return { valid: false, error: `Type name is too long (max ${MAX_SERVER_NAME_LENGTH} characters)` };
+  }
+
+  if (!SERVER_NAME_PATTERN.test(name)) {
+    return {
+      valid: false,
+      error: 'Type name contains invalid characters. Only letters, numbers, hyphens and underscores are allowed'
+    };
+  }
+
+  return { valid: true };
+}
