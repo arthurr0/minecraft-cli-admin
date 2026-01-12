@@ -9,7 +9,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({ message }) => {
   return (
     <Box flexDirection="column" marginTop={1}>
       <Box>
-        <Text color="gray">{'─'.repeat(60)}</Text>
+        <Text color="gray">{'─'.repeat(70)}</Text>
       </Box>
       {message && (
         <Box marginBottom={1}>
@@ -28,6 +28,10 @@ export const ActionBar: React.FC<ActionBarProps> = ({ message }) => {
         <Text>
           <Text color="yellow" bold>[r]</Text>
           <Text> Restart</Text>
+        </Text>
+        <Text>
+          <Text color="white" bold>[c]</Text>
+          <Text> Console</Text>
         </Text>
         <Text>
           <Text color="blue" bold>[l]</Text>

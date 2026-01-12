@@ -8,15 +8,15 @@ interface LogPanelProps {
 
 export const LogPanel: React.FC<LogPanelProps> = ({ serverName, logs }) => {
   return (
-    <Box flexDirection="column" borderStyle="single" paddingX={1} height={15}>
+    <Box flexDirection="column" borderStyle="single" paddingX={1}>
       <Text bold color="yellow">Logs: {serverName}</Text>
-      <Box marginTop={1} flexDirection="column" overflow="hidden">
+      <Box marginTop={1} flexDirection="column">
         {logs.length === 0 ? (
           <Text color="gray">No logs available</Text>
         ) : (
-          logs.slice(-10).map((line, index) => (
-            <Text key={index} wrap="truncate" color="gray">
-              {line.slice(0, 60)}
+          logs.slice(-15).map((line, index) => (
+            <Text key={index} wrap="truncate-end" color="gray">
+              {line}
             </Text>
           ))
         )}

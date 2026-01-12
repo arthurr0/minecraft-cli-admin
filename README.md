@@ -26,7 +26,7 @@ mc-cli --help                 # Full help
 
 ## TUI Dashboard
 
-Keys: `↑↓` navigate, `s` start, `x` stop, `r` restart, `l` logs, `b` backup, `q` quit
+Keys: `↑↓` navigate, `s` start, `x` stop, `r` restart, `c` console, `l` logs, `b` backup, `q` quit
 
 ## Configuration
 

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { render, Box, Text, useApp, useInput } from 'ink';
+import { spawn } from 'child_process';
 import { Header } from './components/Header.js';
 import { ServerTable } from './components/ServerTable.js';
 import { LogPanel } from './components/LogPanel.js';
 import { ActionBar } from './components/ActionBar.js';
 import { useServers } from './hooks/useServers.js';
 import { useServerLogs } from './hooks/useServerLogs.js';
-import { serverService, backupService } from '../services/index.js';
+import { serverService, backupService, screenService } from '../services/index.js';
 
 const Dashboard: React.FC = () => {
   const { exit } = useApp();
@@ -77,6 +78,32 @@ const Dashboard: React.FC = () => {
     setIsProcessing(false);
   }, [selectedServer, isProcessing, showMessage]);
 
+  const handleConsole = useCallback(async () => {
+    if (!selectedServer || isProcessing) return;
+
+    const isRunning = await screenService.exists(selectedServer.name);
+    if (!isRunning) {
+      showMessage(`Server ${selectedServer.name} is not running`);
+      return;
+    }
+
+    exit();
+
+    setTimeout(() => {
+      console.log(`\nAttaching to ${selectedServer.name} console...`);
+      console.log('Press Ctrl+A, D to detach\n');
+
+      const screen = spawn('screen', ['-x', selectedServer.name], {
+        stdio: 'inherit'
+      });
+
+      screen.on('close', () => {
+        console.log('\nDetached from console. Run "mc-cli dashboard" to return.\n');
+        process.exit(0);
+      });
+    }, 100);
+  }, [selectedServer, isProcessing, exit, showMessage]);
+
   useInput((input, key) => {
     if (isProcessing) return;
 
@@ -120,6 +147,11 @@ const Dashboard: React.FC = () => {
       return;
     }
 
+    if (input === 'c') {
+      handleConsole();
+      return;
+    }
+
     if (key.return) {
       refresh();
       return;
@@ -131,7 +163,7 @@ const Dashboard: React.FC = () => {
       <Header title="Minecraft Server Manager" />
 
       <Box flexDirection="row" marginTop={1}>
-        <Box flexDirection="column" width={showLogs ? '60%' : '100%'}>
+        <Box flexDirection="column" width={showLogs ? '55%' : '100%'}>
           <ServerTable
             servers={servers}
             selectedIndex={selectedIndex}
@@ -140,7 +172,7 @@ const Dashboard: React.FC = () => {
         </Box>
 
         {showLogs && selectedServer && (
-          <Box flexDirection="column" width="40%" marginLeft={2}>
+          <Box flexDirection="column" width="45%" marginLeft={1}>
             <LogPanel
               serverName={selectedServer.name}
               logs={logs}
