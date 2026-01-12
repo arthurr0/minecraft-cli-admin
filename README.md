@@ -7,7 +7,7 @@
 **Modern terminal UI for managing Minecraft servers.** Start, stop, monitor, and backup your servers with a beautiful interactive dashboard.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/your-repo/minecraft-cli-admin/main/screenshot.png" alt="Dashboard Screenshot" width="700">
+  <img src="screenshot.png" alt="Dashboard Screenshot" width="700">
 </p>
 
 ## ✨ Features
