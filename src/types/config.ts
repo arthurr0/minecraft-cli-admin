@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const ServerConfigSchema = z.object({
-  type: z.enum(['spigot-params', 'proxy-params']),
+  type: z.string(),
   path: z.string(),
   port: z.number().optional(),
 });
