@@ -90,7 +90,8 @@ const Dashboard: React.FC = () => {
     exit();
 
     setTimeout(() => {
-      console.log(`\nAttaching to ${selectedServer.name} console...`);
+      console.clear();
+      console.log(`Attaching to ${selectedServer.name} console...`);
       console.log('Press Ctrl+A, D to detach\n');
 
       const screen = spawn('screen', ['-x', selectedServer.name], {
@@ -98,8 +99,8 @@ const Dashboard: React.FC = () => {
       });
 
       screen.on('close', () => {
-        console.log('\nDetached from console. Run "mc-cli dashboard" to return.\n');
-        process.exit(0);
+        console.clear();
+        renderDashboard();
       });
     }, 100);
   }, [selectedServer, isProcessing, exit, showMessage]);
