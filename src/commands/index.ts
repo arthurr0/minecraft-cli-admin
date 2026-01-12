@@ -8,3 +8,4 @@ export { backupCommand } from './backup.js';
 export { restoreCommand } from './restore.js';
 export { listCommand } from './list.js';
 export { cleanupCommand } from './cleanup.js';
+export { completionCommand } from './completion.js';

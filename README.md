@@ -44,6 +44,18 @@ File `config.json` (created automatically):
 }
 ```
 
+## Tab Completion
+
+```bash
+# Bash - add to ~/.bashrc:
+eval "$(mc-cli completion bash)"
+
+# Zsh - add to ~/.zshrc:
+eval "$(mc-cli completion zsh)"
+```
+
+Then restart your shell or run `source ~/.bashrc` (or `~/.zshrc`).
+
 ## Uninstall
 
 ```bash

@@ -105,9 +105,18 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
             echo "" >> "$SHELL_CONFIG"
             echo "# Minecraft CLI Admin" >> "$SHELL_CONFIG"
             echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$SHELL_CONFIG"
-            success "Added to $SHELL_CONFIG"
-            warn "Run: source $SHELL_CONFIG"
+            success "Added PATH to $SHELL_CONFIG"
         fi
+
+        read -p "Enable tab completion in $SHELL_CONFIG? [Y/n] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+            local shell_name=$(basename "$SHELL")
+            echo "eval \"\$(mc-cli completion $shell_name)\"" >> "$SHELL_CONFIG"
+            success "Added tab completion to $SHELL_CONFIG"
+        fi
+
+        warn "Run: source $SHELL_CONFIG"
     else
         echo "Add manually to your shell config:"
         echo -e "${YELLOW}  export PATH=\"$INSTALL_DIR:\$PATH\"${NC}"

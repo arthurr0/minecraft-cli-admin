@@ -9,8 +9,10 @@ import {
   backupCommand,
   restoreCommand,
   listCommand,
-  cleanupCommand
+  cleanupCommand,
+  completionCommand
 } from './commands/index.js';
+import { configService } from './services/index.js';
 
 export function createProgram(): Command {
   const program = new Command();
@@ -19,6 +21,20 @@ export function createProgram(): Command {
     .name('mc-cli')
     .description('Minecraft server management CLI with TUI dashboard')
     .version('1.0.0');
+
+  program
+    .option('--list-servers', 'List server names (for shell completion)')
+    .action(async (options) => {
+      if (options.listServers) {
+        try {
+          const servers = await configService.getServerNames();
+          console.log(servers.join('\n'));
+        } catch {
+          // Silent fail for completion
+        }
+        process.exit(0);
+      }
+    });
 
   program
     .command('start <server>')
@@ -83,6 +99,11 @@ export function createProgram(): Command {
       const { renderDashboard } = await import('./ui/App.js');
       renderDashboard();
     });
+
+  program
+    .command('completion [shell]')
+    .description('Generate shell completion script (bash/zsh)')
+    .action(completionCommand);
 
   return program;
 }
