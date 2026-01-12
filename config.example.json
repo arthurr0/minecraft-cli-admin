@@ -1,0 +1,56 @@
+{
+  "servers": {
+    "survival": {
+      "type": "spigot-params",
+      "path": "/opt/minecraft/survival",
+      "port": 25565
+    },
+    "creative": {
+      "type": "spigot-params",
+      "path": "/opt/minecraft/creative",
+      "port": 25566
+    },
+    "proxy": {
+      "type": "proxy-params",
+      "path": "/opt/minecraft/proxy"
+    }
+  },
+  "server_types": {
+    "spigot-params": {
+      "memory": "2G",
+      "min_memory": "1G",
+      "jvm_flags": [
+        "-XX:+UseG1GC",
+        "-XX:+ParallelRefProcEnabled",
+        "-XX:MaxGCPauseMillis=200",
+        "-XX:+UnlockExperimentalVMOptions",
+        "-XX:+DisableExplicitGC",
+        "-XX:+AlwaysPreTouch",
+        "-XX:G1NewSizePercent=30",
+        "-XX:G1MaxNewSizePercent=40",
+        "-XX:G1HeapRegionSize=8M",
+        "-XX:G1ReservePercent=20",
+        "-XX:G1HeapWastePercent=5",
+        "-XX:G1MixedGCCountTarget=4",
+        "-XX:InitiatingHeapOccupancyPercent=15",
+        "-XX:G1MixedGCLiveThresholdPercent=90",
+        "-XX:G1RSetUpdatingPauseTimePercent=5",
+        "-XX:SurvivorRatio=32",
+        "-XX:+PerfDisableSharedMem",
+        "-XX:MaxTenuringThreshold=1"
+      ]
+    },
+    "proxy-params": {
+      "memory": "512M",
+      "min_memory": "256M",
+      "jvm_flags": [
+        "-XX:+UseG1GC",
+        "-XX:G1HeapRegionSize=4M",
+        "-XX:+UnlockExperimentalVMOptions",
+        "-XX:+ParallelRefProcEnabled",
+        "-XX:+AlwaysPreTouch",
+        "-XX:MaxInlineLevel=15"
+      ]
+    }
+  }
+}

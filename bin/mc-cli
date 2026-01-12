@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")/.."
+exec node "$SCRIPT_DIR/dist/index.js" "$@"
