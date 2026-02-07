@@ -10,7 +10,6 @@ export class ScreenService {
     const fullCommand = command.join(' ');
     const result = await shell('screen', [
       '-dmS', sessionName,
-      '-c', '/dev/null',
       'bash', '-c', `cd "${workingDir}" && ${fullCommand}`
     ]);
     return result.success;
