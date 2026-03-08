@@ -67,9 +67,25 @@ export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
         <Text bold color="yellow">Runtime Metrics</Text>
         <Box marginTop={1} flexDirection="column">
           <DetailRow
-            label="Connections"
+            label="Total conn"
             value={isRunning && network ? String(network.connections) : '-'}
             valueColor="green"
+          />
+          <DetailRow
+            label="TCP sockets"
+            value={isRunning && network ? String(network.tcpConnections) : '-'}
+          />
+          <DetailRow
+            label="UDP sockets"
+            value={isRunning && network ? String(network.udpSockets) : '-'}
+          />
+          <DetailRow
+            label="Listening"
+            value={isRunning && network ? String(network.listeningSockets) : '-'}
+          />
+          <DetailRow
+            label="Established"
+            value={isRunning && network ? String(network.establishedConnections) : '-'}
           />
           <DetailRow
             label="Received"

@@ -8,9 +8,15 @@ export class ProcessService {
   }
 
   async getUptime(pid: number): Promise<string | null> {
-    const result = await shell('ps', ['-p', String(pid), '-o', 'etime=']);
+    const result = await shell('ps', ['-p', String(pid), '-o', 'etimes=']);
     if (!result.success) return null;
-    return result.stdout.trim();
+
+    const seconds = parseInt(result.stdout.trim(), 10);
+    if (Number.isNaN(seconds)) {
+      return null;
+    }
+
+    return this.formatDuration(seconds);
   }
 
   async getMemoryKB(pid: number): Promise<number | null> {
@@ -60,10 +66,14 @@ export class ProcessService {
   }
 
   async getNetworkStats(pid: number): Promise<NetworkStats | null> {
-    const result = await shell('ss', ['-H', '-tupn']);
+    const result = await shell('ss', ['-H', '-tanup']);
     if (!result.success) return null;
 
     let connections = 0;
+    let tcpConnections = 0;
+    let udpSockets = 0;
+    let listeningSockets = 0;
+    let establishedConnections = 0;
     let rxBytes = 0;
     let txBytes = 0;
 
@@ -74,6 +84,26 @@ export class ProcessService {
       }
 
       connections += 1;
+
+      const parts = line.trim().split(/\s+/);
+      const protocol = parts[0] ?? '';
+      const state = parts[1] ?? '';
+
+      if (protocol.startsWith('tcp')) {
+        tcpConnections += 1;
+      }
+
+      if (protocol.startsWith('udp')) {
+        udpSockets += 1;
+      }
+
+      if (state === 'LISTEN' || state === 'UNCONN') {
+        listeningSockets += 1;
+      }
+
+      if (state === 'ESTAB') {
+        establishedConnections += 1;
+      }
 
       const rxMatch = line.match(/bytes_received:(\d+)/);
       if (rxMatch) {
@@ -88,9 +118,30 @@ export class ProcessService {
 
     return {
       connections,
+      tcpConnections,
+      udpSockets,
+      listeningSockets,
+      establishedConnections,
       rxBytes: rxBytes > 0 ? rxBytes : undefined,
       txBytes: txBytes > 0 ? txBytes : undefined,
     };
+  }
+
+  private formatDuration(totalSeconds: number): string {
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+
+    if (days > 0) {
+      return `${days}d ${hh}:${mm}:${ss}`;
+    }
+
+    return `${hh}:${mm}:${ss}`;
   }
 }
 

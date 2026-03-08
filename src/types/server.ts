@@ -4,6 +4,10 @@ export type ServerStatus = 'running' | 'stopped' | 'starting' | 'stopping';
 
 export interface NetworkStats {
   connections: number;
+  tcpConnections: number;
+  udpSockets: number;
+  listeningSockets: number;
+  establishedConnections: number;
   rxBytes?: number;
   txBytes?: number;
 }

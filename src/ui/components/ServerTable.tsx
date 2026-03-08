@@ -71,12 +71,12 @@ export const ServerTable: React.FC<ServerTableProps> = ({
             {'TYPE'.padEnd(16)}
             {'PORT'.padEnd(8)}
             {'RAM'.padEnd(10)}
-            {'UPTIME'.padEnd(10)}
+            {'UPTIME'.padEnd(12)}
           </Text>
         )}
       </Box>
       <Box marginBottom={1}>
-        <Text color="gray">{'─'.repeat(narrow ? 28 : compact ? 44 : 70)}</Text>
+        <Text color="gray">{'─'.repeat(narrow ? 28 : compact ? 44 : 74)}</Text>
       </Box>
 
       {servers.map((server, index) => {
@@ -89,7 +89,7 @@ export const ServerTable: React.FC<ServerTableProps> = ({
         const port = (server.config.port?.toString() || '-').padEnd(8);
         const ram = server.memoryMB ? `${server.memoryMB}MB`.padEnd(10) : '-'.padEnd(10);
         const cpu = server.cpuPercent !== undefined ? `${server.cpuPercent}%`.padEnd(8) : '-'.padEnd(8);
-        const uptime = (server.uptime || '-').padEnd(10);
+        const uptime = (server.uptime || '-').padEnd(12);
 
         return (
           <Box key={server.name} flexDirection={narrow ? 'column' : 'row'} marginBottom={narrow ? 1 : 0}>
