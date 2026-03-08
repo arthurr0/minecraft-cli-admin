@@ -6,6 +6,7 @@ export type MessageLevel = 'info' | 'success' | 'error';
 export interface MessageBarProps {
   message?: string;
   level?: MessageLevel;
+  fullWidth?: boolean;
 }
 
 const LEVEL_STYLES: Record<MessageLevel, { color: 'blue' | 'green' | 'red'; label: string }> = {
@@ -14,10 +15,10 @@ const LEVEL_STYLES: Record<MessageLevel, { color: 'blue' | 'green' | 'red'; labe
   error: { color: 'red', label: 'ERROR' },
 };
 
-export const MessageBar: React.FC<MessageBarProps> = ({ message, level = 'info' }) => {
+export const MessageBar: React.FC<MessageBarProps> = ({ message, level = 'info', fullWidth = false }) => {
   if (!message) {
     return (
-      <Box borderStyle="single" borderColor="gray" paddingX={1}>
+      <Box borderStyle="single" borderColor="gray" paddingX={1} width={fullWidth ? '100%' : undefined}>
         <Text color="gray">Ready. Select a server to inspect details or trigger an action.</Text>
       </Box>
     );
@@ -26,7 +27,7 @@ export const MessageBar: React.FC<MessageBarProps> = ({ message, level = 'info' 
   const style = LEVEL_STYLES[level];
 
   return (
-    <Box borderStyle="single" borderColor={style.color} paddingX={1}>
+    <Box borderStyle="single" borderColor={style.color} paddingX={1} width={fullWidth ? '100%' : undefined}>
       <Text color={style.color} bold>
         {style.label}
       </Text>

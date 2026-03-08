@@ -5,7 +5,7 @@ import { Header } from './components/Header.js';
 import { ServerTable } from './components/ServerTable.js';
 import { ActionBar } from './components/ActionBar.js';
 import { ConfirmDialog } from './components/ConfirmDialog.js';
-import { MessageBar, MetricsPanel, ServerDetailsPanel } from './components/index.js';
+import { MessageBar, ServerDetailsPanel } from './components/index.js';
 import {
   ConfigMenu,
   ServerListView,
@@ -514,8 +514,8 @@ const Dashboard: React.FC = () => {
           isRefreshing={isLoading || isProcessing}
         />
 
-      <Box flexDirection={contentDirection} marginTop={1}>
-        <Box flexDirection="column" width={isCompact ? undefined : '58%'}>
+      <Box flexDirection={contentDirection} alignItems="flex-start" marginTop={1}>
+        <Box flexDirection="column" width={isCompact ? '100%' : '62%'}>
           <ServerTable
             servers={servers}
             selectedIndex={selectedIndex}
@@ -528,7 +528,7 @@ const Dashboard: React.FC = () => {
 
         <Box
           flexDirection="column"
-          width={isCompact ? undefined : '42%'}
+          width={isCompact ? '100%' : '38%'}
           marginLeft={isCompact ? 0 : 1}
           marginTop={isCompact ? 1 : 0}
         >
@@ -537,14 +537,11 @@ const Dashboard: React.FC = () => {
             isProcessing={isProcessing}
             compact={isNarrow}
           />
-          <Box marginTop={1}>
-            <MetricsPanel server={selectedServer} compact={isNarrow} />
-          </Box>
         </Box>
       </Box>
 
       <Box marginTop={1}>
-        <MessageBar message={message?.text} level={message?.level} />
+        <MessageBar message={message?.text} level={message?.level} fullWidth />
       </Box>
 
       <ActionBar showEditKey compact={isCompact} />

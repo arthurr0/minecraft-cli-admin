@@ -10,7 +10,7 @@ interface ServerDetailsPanelProps {
 
 function DetailRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
   return (
-    <Box>
+    <Box justifyContent="space-between">
       <Text color="gray">{label.padEnd(11)}</Text>
       <Text color={valueColor}>{value}</Text>
     </Box>
@@ -34,10 +34,12 @@ export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
   }
 
   const statusColor = server.status === 'running' ? 'green' : 'red';
+  const isRunning = server.status === 'running';
+  const network = server.network;
 
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="blue" paddingX={1}>
-      <Text bold color="blue">Server Details</Text>
+      <Text bold color="blue">Selected Server</Text>
       <Box marginTop={1} flexDirection="column">
         <DetailRow label="Name" value={server.name} valueColor="cyan" />
         <DetailRow label="Status" value={server.status.toUpperCase()} valueColor={statusColor} />
@@ -57,6 +59,27 @@ export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
           value={isProcessing ? 'Processing request...' : 'Idle'}
           valueColor={isProcessing ? 'yellow' : 'green'}
         />
+      </Box>
+      <Box marginTop={1}>
+        <Text color="gray">{'─'.repeat(compact ? 28 : 36)}</Text>
+      </Box>
+      <Box marginTop={1} flexDirection="column">
+        <Text bold color="yellow">Runtime Metrics</Text>
+        <Box marginTop={1} flexDirection="column">
+          <DetailRow
+            label="Connections"
+            value={isRunning && network ? String(network.connections) : '-'}
+            valueColor="green"
+          />
+          <DetailRow
+            label="Received"
+            value={isRunning && network?.rxBytes !== undefined ? `${Math.round(network.rxBytes / 1024)} KB` : '-'}
+          />
+          <DetailRow
+            label="Sent"
+            value={isRunning && network?.txBytes !== undefined ? `${Math.round(network.txBytes / 1024)} KB` : '-'}
+          />
+        </Box>
       </Box>
     </Box>
   );
