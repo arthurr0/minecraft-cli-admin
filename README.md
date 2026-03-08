@@ -1,36 +1,47 @@
-# 🎮 Minecraft CLI Admin
+# Minecraft CLI Admin
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green?logo=node.js)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange)](LICENSE)
 
-**Modern terminal UI for managing Minecraft servers.** Start, stop, monitor, and backup your servers with a beautiful interactive dashboard.
+Modern terminal UI for managing Minecraft servers. Start, stop, monitor, edit config, and create backups from one dashboard.
 
 <p align="center">
   <img src="screenshot.png" alt="Dashboard Screenshot" width="700">
 </p>
 
-## ✨ Features
+## Features
 
-- 🖥️ **Interactive TUI Dashboard** - Real-time server status with keyboard controls
-- 🚀 **Multi-Server Support** - Manage Spigot, Paper, Velocity proxy from one place
-- 📊 **Live Monitoring** - PID, uptime, RAM usage at a glance
-- 💾 **Smart Backups** - Local & S3 with automatic compression (zstd/xz/gzip)
-- 🔌 **Console Access** - Attach to server console directly from dashboard
-- ⌨️ **Tab Completion** - Bash & Zsh autocompletion for commands and server names
-- 🛡️ **Graceful Shutdown** - Safe server stops with fallback force kill
+- Interactive Ink dashboard with live status, details, and logs
+- Multi-server support for Spigot, Paper, and Velocity-style setups
+- Backup workflows with local compression and optional S3 upload
+- Inline configuration editor for servers and server types
+- Shell completion for Bash and Zsh
+- Graceful shutdown and console attach through `screen`
 
-## 🚀 Quick Start
+## Install
 
 ```bash
-git clone https://github.com/your-repo/minecraft-cli-admin.git
+npm install -g minecraft-cli-admin
+```
+
+Install the latest GitHub Release without cloning:
+
+```bash
+curl -fsSL https://github.com/arthurr0/minecraft-cli-admin/releases/latest/download/install-release.sh | bash
+```
+
+Install from a local checkout for development:
+
+```bash
+git clone https://github.com/arthurr0/minecraft-cli-admin.git
 cd minecraft-cli-admin
 ./install.sh
 ```
 
-**Requirements:** Node.js 18+, screen, Java
+Requirements: Node.js 18+, `screen`, Java. Optional tools: `zstd`, `ss` or `netstat`.
 
-## 📖 Usage
+## Usage
 
 ```bash
 mc-cli dashboard              # Interactive TUI
@@ -41,7 +52,7 @@ mc-cli backup <server>        # Create backup
 mc-cli console <server>       # Attach to console
 ```
 
-## 🎹 Dashboard Controls
+## Dashboard Controls
 
 | Key | Action |
 |-----|--------|
@@ -52,11 +63,13 @@ mc-cli console <server>       # Attach to console
 | `c` | Open console |
 | `l` | Toggle logs |
 | `b` | Create backup |
+| `e` | Open config editor |
+| `Enter` | Refresh dashboard |
 | `q` | Quit |
 
-## ⚙️ Configuration
+## Configuration
 
-Config auto-created at `/opt/minecraft/config.json`:
+Configuration is created automatically at `MC_CONFIG_PATH`, otherwise `/opt/minecraft/config.json`, and falls back to the current working directory when `/opt/minecraft` is not writable.
 
 ```json
 {
@@ -77,29 +90,24 @@ Config auto-created at `/opt/minecraft/config.json`:
 }
 ```
 
-## 🔧 Tab Completion
+## Development
 
 ```bash
-# Bash
-echo 'eval "$(mc-cli completion bash)"' >> ~/.bashrc
-
-# Zsh
-echo 'eval "$(mc-cli completion zsh)"' >> ~/.zshrc
+npm install
+npm run dev
+npm run typecheck
+npm test
+npm run build
 ```
 
-## 📦 Tech Stack
+PRs should use Conventional Commit style titles such as `feat: redesign dashboard sidebar` because releases are generated automatically from merges to `main`.
 
-- **Runtime:** Node.js 18+
-- **Language:** TypeScript
-- **CLI Framework:** Commander.js
-- **TUI:** Ink (React for terminals)
-- **Validation:** Zod
-- **Process Management:** GNU Screen
+## Release Flow
 
-## 🤝 Contributing
+- CI runs on pull requests and pushes to `main`.
+- Merges to `main` publish to public npm through `semantic-release`.
+- GitHub Releases include the npm tarball and an install script for servers that should not clone the repository.
 
-Contributions welcome! Feel free to open issues and pull requests.
+## License
 
-## 📄 License
-
-Apache License 2.0
+Apache License 2.0.

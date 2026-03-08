@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { render, Box, Text, useApp, useInput } from 'ink';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { render, Box, useApp, useInput } from 'ink';
 import { spawn } from 'child_process';
 import { Header } from './components/Header.js';
 import { ServerTable } from './components/ServerTable.js';
 import { LogPanel } from './components/LogPanel.js';
 import { ActionBar } from './components/ActionBar.js';
 import { ConfirmDialog } from './components/ConfirmDialog.js';
+import { MessageBar, ServerDetailsPanel } from './components/index.js';
 import {
   ConfigMenu,
   ServerListView,
@@ -17,6 +18,7 @@ import { useServers } from './hooks/useServers.js';
 import { useServerLogs } from './hooks/useServerLogs.js';
 import { useConfig } from './hooks/useConfig.js';
 import { serverService, backupService, screenService } from '../services/index.js';
+import { configService } from '../services/config.service.js';
 
 type AppMode =
   | 'dashboard'
@@ -38,20 +40,32 @@ interface ConfirmState {
   itemType: 'server' | 'type';
 }
 
+type MessageState = {
+  level: 'info' | 'success' | 'error';
+  text: string;
+};
+
 const Dashboard: React.FC = () => {
   const { exit } = useApp();
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [showLogs, setShowLogs] = useState(false);
-  const [message, setMessage] = useState<string | undefined>();
+  const [selectedName, setSelectedName] = useState<string | undefined>();
+  const [showLogs, setShowLogs] = useState(true);
+  const [message, setMessage] = useState<MessageState | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [, setTick] = useState(0);
 
   const [mode, setMode] = useState<AppMode>('dashboard');
   const [editing, setEditing] = useState<EditingState>({ isNew: false });
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const messageTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const { servers, refresh, isLoading } = useServers(2000);
-  const selectedServer = servers[selectedIndex];
+  const { servers, refresh, isLoading, error } = useServers(2000);
+  const selectedIndex = useMemo(() => {
+    if (!selectedName) {
+      return servers.length > 0 ? 0 : -1;
+    }
+    return servers.findIndex(server => server.name === selectedName);
+  }, [selectedName, servers]);
+  const selectedServer = selectedIndex >= 0 ? servers[selectedIndex] : servers[0];
   const logs = useServerLogs(selectedServer?.config.path);
 
   const {
@@ -64,63 +78,118 @@ const Dashboard: React.FC = () => {
     addServerType,
     updateServerType,
     deleteServerType,
+    isLoading: isConfigLoading,
+    error: configError,
   } = useConfig();
+  const configPath = configService.getConfigPath();
+  const runningServers = servers.filter(server => server.status === 'running').length;
 
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const showMessage = useCallback((msg: string) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(undefined), 3000);
+  useEffect(() => {
+    if (servers.length === 0) {
+      setSelectedName(undefined);
+      return;
+    }
+
+    if (!selectedName || !servers.some(server => server.name === selectedName)) {
+      setSelectedName(servers[0].name);
+    }
+  }, [selectedName, servers]);
+
+  useEffect(() => {
+    return () => {
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+      }
+    };
   }, []);
+
+  const showMessage = useCallback((text: string, level: MessageState['level'] = 'info', duration = 4000) => {
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+    }
+
+    setMessage({ text, level });
+
+    if (duration > 0) {
+      messageTimeoutRef.current = setTimeout(() => {
+        setMessage(undefined);
+        messageTimeoutRef.current = undefined;
+      }, duration);
+    }
+  }, []);
+
+  const showActionResult = useCallback((result: { success: boolean; message: string }) => {
+    showMessage(result.message, result.success ? 'success' : 'error');
+  }, [showMessage]);
+
+  useEffect(() => {
+    if (configError) {
+      showMessage(configError, 'error', 6000);
+    }
+  }, [configError, showMessage]);
 
   const handleStart = useCallback(async () => {
     if (!selectedServer || isProcessing) return;
     setIsProcessing(true);
     showMessage(`Starting ${selectedServer.name}...`);
 
-    const result = await serverService.start(selectedServer.name, false);
-    showMessage(result.message);
-    await refresh();
-    setIsProcessing(false);
-  }, [selectedServer, isProcessing, showMessage, refresh]);
+    try {
+      const result = await serverService.start(selectedServer.name, false);
+      showActionResult(result);
+      await refresh();
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedServer, isProcessing, showMessage, showActionResult, refresh]);
 
   const handleStop = useCallback(async () => {
     if (!selectedServer || isProcessing) return;
     setIsProcessing(true);
     showMessage(`Stopping ${selectedServer.name}...`);
 
-    const result = await serverService.stop(selectedServer.name);
-    showMessage(result.message);
-    await refresh();
-    setIsProcessing(false);
-  }, [selectedServer, isProcessing, showMessage, refresh]);
+    try {
+      const result = await serverService.stop(selectedServer.name);
+      showActionResult(result);
+      await refresh();
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedServer, isProcessing, showMessage, showActionResult, refresh]);
 
   const handleRestart = useCallback(async () => {
     if (!selectedServer || isProcessing) return;
     setIsProcessing(true);
     showMessage(`Restarting ${selectedServer.name}...`);
 
-    const result = await serverService.restart(selectedServer.name);
-    showMessage(result.message);
-    await refresh();
-    setIsProcessing(false);
-  }, [selectedServer, isProcessing, showMessage, refresh]);
+    try {
+      const result = await serverService.restart(selectedServer.name);
+      showActionResult(result);
+      await refresh();
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedServer, isProcessing, showMessage, showActionResult, refresh]);
 
   const handleBackup = useCallback(async () => {
     if (!selectedServer || isProcessing) return;
     setIsProcessing(true);
     showMessage(`Creating backup for ${selectedServer.name}...`);
 
-    const result = await backupService.createBackup(selectedServer.name);
-    if (result.success) {
-      showMessage(`Backup created: ${result.size}`);
-    } else {
-      showMessage(`Backup failed: ${result.error}`);
+    try {
+      const result = await backupService.createBackup(selectedServer.name);
+      if (result.success) {
+        showMessage(`Backup created: ${result.size}`, 'success');
+      } else {
+        showMessage(`Backup failed: ${result.error}`, 'error');
+      }
+    } finally {
+      setIsProcessing(false);
     }
-    setIsProcessing(false);
   }, [selectedServer, isProcessing, showMessage]);
 
   const handleConsole = useCallback(async () => {
@@ -128,7 +197,7 @@ const Dashboard: React.FC = () => {
 
     const isRunning = await screenService.exists(selectedServer.name);
     if (!isRunning) {
-      showMessage(`Server ${selectedServer.name} is not running`);
+      showMessage(`Server ${selectedServer.name} is not running`, 'error');
       return;
     }
 
@@ -153,10 +222,10 @@ const Dashboard: React.FC = () => {
   const handleSaveServer = useCallback(async (name: string, config: Parameters<typeof addServer>[1]) => {
     if (editing.isNew) {
       await addServer(name, config);
-      showMessage(`Server '${name}' added`);
+      showMessage(`Server '${name}' added`, 'success');
     } else {
       await updateServer(name, config);
-      showMessage(`Server '${name}' updated`);
+      showMessage(`Server '${name}' updated`, 'success');
     }
     await refresh();
     setMode('server-list');
@@ -165,10 +234,10 @@ const Dashboard: React.FC = () => {
   const handleSaveServerType = useCallback(async (name: string, config: Parameters<typeof addServerType>[1]) => {
     if (editing.isNew) {
       await addServerType(name, config);
-      showMessage(`Server type '${name}' added`);
+      showMessage(`Server type '${name}' added`, 'success');
     } else {
       await updateServerType(name, config);
-      showMessage(`Server type '${name}' updated`);
+      showMessage(`Server type '${name}' updated`, 'success');
     }
     setMode('type-list');
   }, [editing.isNew, addServerType, updateServerType, showMessage]);
@@ -179,16 +248,16 @@ const Dashboard: React.FC = () => {
     try {
       if (confirmState.itemType === 'server') {
         await deleteServer(confirmState.itemName);
-        showMessage(`Server '${confirmState.itemName}' deleted`);
+        showMessage(`Server '${confirmState.itemName}' deleted`, 'success');
         await refresh();
         setMode('server-list');
       } else {
         await deleteServerType(confirmState.itemName);
-        showMessage(`Server type '${confirmState.itemName}' deleted`);
+        showMessage(`Server type '${confirmState.itemName}' deleted`, 'success');
         setMode('type-list');
       }
     } catch (error) {
-      showMessage(error instanceof Error ? error.message : 'Delete failed');
+      showMessage(error instanceof Error ? error.message : 'Delete failed', 'error');
       setMode(confirmState.itemType === 'server' ? 'server-list' : 'type-list');
     }
     setConfirmState(null);
@@ -204,12 +273,18 @@ const Dashboard: React.FC = () => {
     }
 
     if (key.upArrow) {
-      setSelectedIndex(i => Math.max(0, i - 1));
+      const nextIndex = Math.max(0, selectedIndex - 1);
+      if (servers[nextIndex]) {
+        setSelectedName(servers[nextIndex].name);
+      }
       return;
     }
 
     if (key.downArrow) {
-      setSelectedIndex(i => Math.min(servers.length - 1, i + 1));
+      const nextIndex = Math.min(servers.length - 1, selectedIndex + 1);
+      if (servers[nextIndex]) {
+        setSelectedName(servers[nextIndex].name);
+      }
       return;
     }
 
@@ -251,6 +326,7 @@ const Dashboard: React.FC = () => {
 
     if (key.return) {
       refresh();
+      showMessage('Refreshing dashboard...', 'info', 1500);
       return;
     }
   });
@@ -258,7 +334,13 @@ const Dashboard: React.FC = () => {
   if (mode === 'confirm-delete' && confirmState) {
     return (
       <Box flexDirection="column" padding={1}>
-        <Header title="Minecraft Server Manager" />
+        <Header
+          title="Minecraft Server Manager"
+          activeMode="Confirm Delete"
+          totalServers={servers.length}
+          runningServers={runningServers}
+          configPath={configPath}
+        />
         <ConfirmDialog
           message={confirmState.message}
           onConfirm={handleConfirmDelete}
@@ -274,7 +356,14 @@ const Dashboard: React.FC = () => {
   if (mode === 'config-menu') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Header title="Minecraft Server Manager" />
+        <Header
+          title="Minecraft Server Manager"
+          activeMode={isConfigLoading ? 'Config Loading' : 'Config Menu'}
+          totalServers={servers.length}
+          runningServers={runningServers}
+          configPath={configPath}
+          isRefreshing={isConfigLoading}
+        />
         <ConfigMenu
           serverCount={Object.keys(configServers).length}
           typeCount={Object.keys(serverTypes).length}
@@ -294,7 +383,14 @@ const Dashboard: React.FC = () => {
   if (mode === 'server-list') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Header title="Minecraft Server Manager" />
+        <Header
+          title="Minecraft Server Manager"
+          activeMode="Server Config"
+          totalServers={servers.length}
+          runningServers={runningServers}
+          configPath={configPath}
+          isRefreshing={isConfigLoading}
+        />
         <ServerListView
           servers={configServers}
           onAdd={() => {
@@ -315,11 +411,9 @@ const Dashboard: React.FC = () => {
           }}
           onBack={() => setMode('config-menu')}
         />
-        {message && (
-          <Box marginTop={1}>
-            <Text color="yellow">{message}</Text>
-          </Box>
-        )}
+        <Box marginTop={1}>
+          <MessageBar message={message?.text} level={message?.level} />
+        </Box>
       </Box>
     );
   }
@@ -328,7 +422,13 @@ const Dashboard: React.FC = () => {
     const serverTypeNames = Object.keys(serverTypes);
     return (
       <Box flexDirection="column" padding={1}>
-        <Header title="Minecraft Server Manager" />
+        <Header
+          title="Minecraft Server Manager"
+          activeMode={editing.isNew ? 'Create Server' : 'Edit Server'}
+          totalServers={servers.length}
+          runningServers={runningServers}
+          configPath={configPath}
+        />
         <ServerForm
           isNew={editing.isNew}
           serverName={editing.name}
@@ -344,7 +444,14 @@ const Dashboard: React.FC = () => {
   if (mode === 'type-list') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Header title="Minecraft Server Manager" />
+        <Header
+          title="Minecraft Server Manager"
+          activeMode="Type Config"
+          totalServers={servers.length}
+          runningServers={runningServers}
+          configPath={configPath}
+          isRefreshing={isConfigLoading}
+        />
         <TypeListView
           types={serverTypes}
           onAdd={() => {
@@ -365,11 +472,9 @@ const Dashboard: React.FC = () => {
           }}
           onBack={() => setMode('config-menu')}
         />
-        {message && (
-          <Box marginTop={1}>
-            <Text color="yellow">{message}</Text>
-          </Box>
-        )}
+        <Box marginTop={1}>
+          <MessageBar message={message?.text} level={message?.level} />
+        </Box>
       </Box>
     );
   }
@@ -377,7 +482,13 @@ const Dashboard: React.FC = () => {
   if (mode === 'type-form') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Header title="Minecraft Server Manager" />
+        <Header
+          title="Minecraft Server Manager"
+          activeMode={editing.isNew ? 'Create Type' : 'Edit Type'}
+          totalServers={servers.length}
+          runningServers={runningServers}
+          configPath={configPath}
+        />
         <ServerTypeForm
           isNew={editing.isNew}
           typeName={editing.name}
@@ -391,28 +502,47 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Header title="Minecraft Server Manager" />
+      <Header
+        title="Minecraft Server Manager"
+        activeMode={showLogs ? 'Dashboard + Logs' : 'Dashboard'}
+        totalServers={servers.length}
+        runningServers={runningServers}
+        configPath={configPath}
+        isRefreshing={isLoading || isProcessing}
+      />
 
       <Box flexDirection="row" marginTop={1}>
-        <Box flexDirection="column" width={showLogs ? '55%' : '100%'}>
+        <Box flexDirection="column" width="58%">
           <ServerTable
             servers={servers}
             selectedIndex={selectedIndex}
             isLoading={isLoading}
+            error={error}
           />
         </Box>
 
-        {showLogs && selectedServer && (
-          <Box flexDirection="column" width="45%" marginLeft={1}>
-            <LogPanel
-              serverName={selectedServer.name}
-              logs={logs}
-            />
-          </Box>
-        )}
+        <Box flexDirection="column" width="42%" marginLeft={1}>
+          <ServerDetailsPanel
+            server={selectedServer}
+            isProcessing={isProcessing}
+            showLogs={showLogs}
+          />
+          {showLogs && selectedServer && (
+            <Box marginTop={1}>
+              <LogPanel
+                serverName={selectedServer.name}
+                logs={logs}
+              />
+            </Box>
+          )}
+        </Box>
       </Box>
 
-      <ActionBar message={message} showEditKey />
+      <Box marginTop={1}>
+        <MessageBar message={message?.text} level={message?.level} />
+      </Box>
+
+      <ActionBar showLogs={showLogs} showEditKey />
     </Box>
   );
 };

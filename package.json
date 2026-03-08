@@ -3,15 +3,30 @@
   "version": "1.0.0",
   "description": "Minecraft server management CLI with TUI dashboard",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arthurr0/minecraft-cli-admin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/arthurr0/minecraft-cli-admin/issues"
+  },
+  "homepage": "https://github.com/arthurr0/minecraft-cli-admin#readme",
   "bin": {
     "mc-cli": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc && chmod +x dist/index.js",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "test": "vitest",
+    "test": "vitest --run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build",
     "prepare": "npm run build"
   },
   "dependencies": {
@@ -31,6 +46,9 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=18.0.0"

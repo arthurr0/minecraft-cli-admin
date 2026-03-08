@@ -24,6 +24,9 @@ else
 fi
 
 echo ""
+echo "If installed through npm, remove it with:"
+echo -e "  ${RED}npm uninstall -g minecraft-cli-admin${NC}"
+echo ""
 echo "To completely remove, delete the project directory:"
 echo -e "  ${RED}rm -rf $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)${NC}"
 echo ""

@@ -17,7 +17,7 @@ INSTALL_DIR="${MC_INSTALL_DIR:-$HOME/.local/bin}"
 
 echo ""
 echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║${NC}    Minecraft CLI Admin - Installer       ${BLUE}║${NC}"
+echo -e "${BLUE}║${NC} Minecraft CLI Admin - Source Installer   ${BLUE}║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -111,7 +111,7 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         read -p "Enable tab completion in $SHELL_CONFIG? [Y/n] " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-            local shell_name=$(basename "$SHELL")
+            shell_name=$(basename "$SHELL")
             echo "eval \"\$(mc-cli completion $shell_name)\"" >> "$SHELL_CONFIG"
             success "Added tab completion to $SHELL_CONFIG"
         fi
@@ -137,11 +137,16 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║${NC}       Installation complete!             ${GREEN}║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
 echo ""
+echo "This installer is intended for local source checkouts."
+echo "For regular installs without cloning, use:"
+echo -e "  ${BLUE}npm install -g minecraft-cli-admin${NC}"
+echo -e "  ${BLUE}curl -fsSL https://github.com/arthurr0/minecraft-cli-admin/releases/latest/download/install-release.sh | bash${NC}"
+echo ""
 echo "Usage:"
 echo -e "  ${BLUE}mc-cli dashboard${NC}     - Interactive TUI"
 echo -e "  ${BLUE}mc-cli status${NC}        - Server status"
 echo -e "  ${BLUE}mc-cli start <srv>${NC}   - Start server"
 echo -e "  ${BLUE}mc-cli --help${NC}        - Help"
 echo ""
-echo "Config: ${SCRIPT_DIR}/config.json"
+echo "Config: \${MC_CONFIG_PATH:-/opt/minecraft/config.json} (falls back to current directory)"
 echo ""

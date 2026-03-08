@@ -8,8 +8,9 @@ interface LogPanelProps {
 
 export const LogPanel: React.FC<LogPanelProps> = ({ serverName, logs }) => {
   return (
-    <Box flexDirection="column" borderStyle="single" paddingX={1}>
-      <Text bold color="yellow">Logs: {serverName}</Text>
+    <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
+      <Text bold color="yellow">Live Logs</Text>
+      <Text color="gray">Server: {serverName}</Text>
       <Box marginTop={1} flexDirection="column">
         {logs.length === 0 ? (
           <Text color="gray">No logs available</Text>
