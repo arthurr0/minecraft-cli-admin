@@ -7,6 +7,7 @@ interface HeaderProps {
   totalServers: number;
   runningServers: number;
   configPath: string;
+  lastUpdated?: string;
   isRefreshing?: boolean;
 }
 
@@ -16,17 +17,15 @@ export const Header: React.FC<HeaderProps> = ({
   totalServers,
   runningServers,
   configPath,
+  lastUpdated,
   isRefreshing = false,
 }) => {
-  const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
-
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
       <Box justifyContent="space-between">
         <Text bold color="cyan">{title}</Text>
         <Text color="gray">
-          {isRefreshing ? 'Refreshing  ' : ''}
-          {time}
+          {isRefreshing ? 'Refreshing' : `Updated ${lastUpdated ?? '--:--:--'}`}
         </Text>
       </Box>
       <Box justifyContent="space-between">

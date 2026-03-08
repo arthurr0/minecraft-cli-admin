@@ -1,4 +1,5 @@
 import { shell } from '../utils/shell.js';
+import type { NetworkStats } from '../types/server.js';
 
 export class ProcessService {
   async isRunning(pid: number): Promise<boolean> {
@@ -25,6 +26,14 @@ export class ProcessService {
     return Math.round(memoryKB / 1024);
   }
 
+  async getCpuPercent(pid: number): Promise<number | null> {
+    const result = await shell('ps', ['-p', String(pid), '-o', '%cpu=']);
+    if (!result.success) return null;
+
+    const cpu = parseFloat(result.stdout.trim().replace(',', '.'));
+    return Number.isNaN(cpu) ? null : Number(cpu.toFixed(1));
+  }
+
   async kill(pid: number, signal: 'TERM' | 'KILL' = 'TERM'): Promise<boolean> {
     const sig = signal === 'KILL' ? '-KILL' : '-TERM';
     const result = await shell('kill', [sig, String(pid)]);
@@ -48,6 +57,40 @@ export class ProcessService {
 
     const pid = parseInt(result.stdout.trim().split('\n')[0], 10);
     return isNaN(pid) ? null : pid;
+  }
+
+  async getNetworkStats(pid: number): Promise<NetworkStats | null> {
+    const result = await shell('ss', ['-H', '-tupn']);
+    if (!result.success) return null;
+
+    let connections = 0;
+    let rxBytes = 0;
+    let txBytes = 0;
+
+    const lines = result.stdout.split('\n');
+    for (const line of lines) {
+      if (!line.includes(`pid=${pid},`)) {
+        continue;
+      }
+
+      connections += 1;
+
+      const rxMatch = line.match(/bytes_received:(\d+)/);
+      if (rxMatch) {
+        rxBytes += parseInt(rxMatch[1], 10);
+      }
+
+      const txMatch = line.match(/bytes_sent:(\d+)/);
+      if (txMatch) {
+        txBytes += parseInt(txMatch[1], 10);
+      }
+    }
+
+    return {
+      connections,
+      rxBytes: rxBytes > 0 ? rxBytes : undefined,
+      txBytes: txBytes > 0 ? txBytes : undefined,
+    };
   }
 }
 

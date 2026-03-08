@@ -3,10 +3,9 @@ import { render, Box, useApp, useInput } from 'ink';
 import { spawn } from 'child_process';
 import { Header } from './components/Header.js';
 import { ServerTable } from './components/ServerTable.js';
-import { LogPanel } from './components/LogPanel.js';
 import { ActionBar } from './components/ActionBar.js';
 import { ConfirmDialog } from './components/ConfirmDialog.js';
-import { MessageBar, ServerDetailsPanel } from './components/index.js';
+import { MessageBar, MetricsPanel, ServerDetailsPanel } from './components/index.js';
 import {
   ConfigMenu,
   ServerListView,
@@ -15,7 +14,6 @@ import {
   ServerTypeForm,
 } from './components/config/index.js';
 import { useServers } from './hooks/useServers.js';
-import { useServerLogs } from './hooks/useServerLogs.js';
 import { useConfig } from './hooks/useConfig.js';
 import { serverService, backupService, screenService } from '../services/index.js';
 import { configService } from '../services/config.service.js';
@@ -48,17 +46,15 @@ type MessageState = {
 const Dashboard: React.FC = () => {
   const { exit } = useApp();
   const [selectedName, setSelectedName] = useState<string | undefined>();
-  const [showLogs, setShowLogs] = useState(true);
   const [message, setMessage] = useState<MessageState | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [, setTick] = useState(0);
 
   const [mode, setMode] = useState<AppMode>('dashboard');
   const [editing, setEditing] = useState<EditingState>({ isNew: false });
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const messageTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const { servers, refresh, isLoading, error } = useServers(2000);
+  const { servers, refresh, isLoading, error, lastUpdated } = useServers(2000);
   const selectedIndex = useMemo(() => {
     if (!selectedName) {
       return servers.length > 0 ? 0 : -1;
@@ -66,8 +62,6 @@ const Dashboard: React.FC = () => {
     return servers.findIndex(server => server.name === selectedName);
   }, [selectedName, servers]);
   const selectedServer = selectedIndex >= 0 ? servers[selectedIndex] : servers[0];
-  const logs = useServerLogs(selectedServer?.config.path);
-
   const {
     servers: configServers,
     serverTypes,
@@ -83,11 +77,6 @@ const Dashboard: React.FC = () => {
   } = useConfig();
   const configPath = configService.getConfigPath();
   const runningServers = servers.filter(server => server.status === 'running').length;
-
-  useEffect(() => {
-    const interval = setInterval(() => setTick(t => t + 1), 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     if (servers.length === 0) {
@@ -288,11 +277,6 @@ const Dashboard: React.FC = () => {
       return;
     }
 
-    if (input === 'l') {
-      setShowLogs(s => !s);
-      return;
-    }
-
     if (input === 's') {
       handleStart();
       return;
@@ -340,6 +324,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          lastUpdated={lastUpdated}
         />
         <ConfirmDialog
           message={confirmState.message}
@@ -362,6 +347,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          lastUpdated={lastUpdated}
           isRefreshing={isConfigLoading}
         />
         <ConfigMenu
@@ -389,6 +375,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          lastUpdated={lastUpdated}
           isRefreshing={isConfigLoading}
         />
         <ServerListView
@@ -428,6 +415,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          lastUpdated={lastUpdated}
         />
         <ServerForm
           isNew={editing.isNew}
@@ -450,6 +438,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          lastUpdated={lastUpdated}
           isRefreshing={isConfigLoading}
         />
         <TypeListView
@@ -488,6 +477,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          lastUpdated={lastUpdated}
         />
         <ServerTypeForm
           isNew={editing.isNew}
@@ -502,14 +492,15 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Header
-        title="Minecraft Server Manager"
-        activeMode={showLogs ? 'Dashboard + Logs' : 'Dashboard'}
-        totalServers={servers.length}
-        runningServers={runningServers}
-        configPath={configPath}
-        isRefreshing={isLoading || isProcessing}
-      />
+        <Header
+          title="Minecraft Server Manager"
+          activeMode="Dashboard"
+          totalServers={servers.length}
+          runningServers={runningServers}
+          configPath={configPath}
+          lastUpdated={lastUpdated}
+          isRefreshing={isLoading || isProcessing}
+        />
 
       <Box flexDirection="row" marginTop={1}>
         <Box flexDirection="column" width="58%">
@@ -525,16 +516,10 @@ const Dashboard: React.FC = () => {
           <ServerDetailsPanel
             server={selectedServer}
             isProcessing={isProcessing}
-            showLogs={showLogs}
           />
-          {showLogs && selectedServer && (
-            <Box marginTop={1}>
-              <LogPanel
-                serverName={selectedServer.name}
-                logs={logs}
-              />
-            </Box>
-          )}
+          <Box marginTop={1}>
+            <MetricsPanel server={selectedServer} />
+          </Box>
         </Box>
       </Box>
 
@@ -542,7 +527,7 @@ const Dashboard: React.FC = () => {
         <MessageBar message={message?.text} level={message?.level} />
       </Box>
 
-      <ActionBar showLogs={showLogs} showEditKey />
+      <ActionBar showEditKey />
     </Box>
   );
 };

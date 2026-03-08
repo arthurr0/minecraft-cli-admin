@@ -39,6 +39,7 @@ describe('ServerTable', () => {
     expect(lastFrame()).toContain('survival');
     expect(lastFrame()).toContain('RUNNING');
     expect(lastFrame()).toContain('25565');
+    expect(lastFrame()).toContain('paper');
   });
 
   it('renders an error state when loading fails', () => {

@@ -3,10 +3,9 @@ import { Box, Text } from 'ink';
 
 interface ActionBarProps {
   showEditKey?: boolean;
-  showLogs: boolean;
 }
 
-export const ActionBar: React.FC<ActionBarProps> = ({ showEditKey, showLogs }) => {
+export const ActionBar: React.FC<ActionBarProps> = ({ showEditKey }) => {
   return (
     <Box flexDirection="column" marginTop={1}>
       <Box borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
@@ -34,10 +33,6 @@ export const ActionBar: React.FC<ActionBarProps> = ({ showEditKey, showLogs }) =
           </Text>
         </Box>
         <Box gap={2}>
-          <Text>
-            <Text color="blue" bold>[l]</Text>
-            <Text> Logs: {showLogs ? 'On' : 'Off'}</Text>
-          </Text>
           <Text>
             <Text color="yellow" bold>[Enter]</Text>
             <Text> Refresh</Text>

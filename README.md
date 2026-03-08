@@ -12,7 +12,7 @@ Modern terminal UI for managing Minecraft servers. Start, stop, monitor, edit co
 
 ## Features
 
-- Interactive Ink dashboard with live status, details, and logs
+- Interactive Ink dashboard with live status, details, and runtime metrics
 - Multi-server support for Spigot, Paper, and Velocity-style setups
 - Backup workflows with local compression and optional S3 upload
 - Inline configuration editor for servers and server types
@@ -61,7 +61,6 @@ mc-cli console <server>       # Attach to console
 | `x` | Stop server |
 | `r` | Restart server |
 | `c` | Open console |
-| `l` | Toggle logs |
 | `b` | Create backup |
 | `e` | Open config editor |
 | `Enter` | Refresh dashboard |

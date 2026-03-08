@@ -5,7 +5,6 @@ import type { ServerInfo } from '../../types/server.js';
 interface ServerDetailsPanelProps {
   server?: ServerInfo;
   isProcessing?: boolean;
-  showLogs?: boolean;
 }
 
 function DetailRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
@@ -20,7 +19,6 @@ function DetailRow({ label, value, valueColor }: { label: string; value: string;
 export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
   server,
   isProcessing = false,
-  showLogs = false,
 }) => {
   if (!server) {
     return (
@@ -51,7 +49,7 @@ export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
         <DetailRow label="PID" value={server.pid ? String(server.pid) : '-'} />
         <DetailRow label="Uptime" value={server.uptime || '-'} />
         <DetailRow label="Memory" value={server.memoryMB ? `${server.memoryMB} MB` : '-'} />
-        <DetailRow label="Logs" value={showLogs ? 'VISIBLE' : 'HIDDEN'} />
+        <DetailRow label="CPU" value={server.cpuPercent !== undefined ? `${server.cpuPercent}%` : '-'} />
         <DetailRow
           label="Action"
           value={isProcessing ? 'Processing request...' : 'Idle'}

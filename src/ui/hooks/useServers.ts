@@ -6,12 +6,14 @@ export function useServers(pollInterval: number = 2000) {
   const [servers, setServers] = useState<ServerInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | undefined>(undefined);
 
   const refresh = useCallback(async () => {
     try {
       const status = await serverService.getAllStatus();
       setServers(status);
       setError(null);
+      setLastUpdated(new Date().toLocaleTimeString('en-GB', { hour12: false }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -25,5 +27,5 @@ export function useServers(pollInterval: number = 2000) {
     return () => clearInterval(interval);
   }, [refresh, pollInterval]);
 
-  return { servers, refresh, isLoading, error };
+  return { servers, refresh, isLoading, error, lastUpdated };
 }

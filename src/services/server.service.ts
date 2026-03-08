@@ -168,6 +168,8 @@ export class ServerService {
         info.pid = javaPid;
         info.uptime = await this.process.getUptime(javaPid) ?? undefined;
         info.memoryMB = await this.process.getMemoryMB(javaPid) ?? undefined;
+        info.cpuPercent = await this.process.getCpuPercent(javaPid) ?? undefined;
+        info.network = await this.process.getNetworkStats(javaPid) ?? undefined;
       }
     }
 
