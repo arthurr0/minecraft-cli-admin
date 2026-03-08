@@ -7,6 +7,7 @@ interface HeaderProps {
   totalServers: number;
   runningServers: number;
   configPath: string;
+  compact?: boolean;
   lastUpdated?: string;
   isRefreshing?: boolean;
 }
@@ -17,18 +18,19 @@ export const Header: React.FC<HeaderProps> = ({
   totalServers,
   runningServers,
   configPath,
+  compact = false,
   lastUpdated,
   isRefreshing = false,
 }) => {
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-      <Box justifyContent="space-between">
+      <Box flexDirection={compact ? 'column' : 'row'} justifyContent="space-between">
         <Text bold color="cyan">{title}</Text>
         <Text color="gray">
           {isRefreshing ? 'Refreshing' : `Updated ${lastUpdated ?? '--:--:--'}`}
         </Text>
       </Box>
-      <Box justifyContent="space-between">
+      <Box flexDirection={compact ? 'column' : 'row'} justifyContent="space-between">
         <Text color="white">
           Mode: <Text color="yellow">{activeMode}</Text>
           {'  '}

@@ -4,6 +4,7 @@ import type { ServerInfo } from '../../types/server.js';
 
 interface MetricsPanelProps {
   server?: ServerInfo;
+  compact?: boolean;
 }
 
 function formatBytes(bytes?: number): string {
@@ -35,7 +36,7 @@ function MetricRow({ label, value, color }: { label: string; value: string; colo
   );
 }
 
-export const MetricsPanel: React.FC<MetricsPanelProps> = ({ server }) => {
+export const MetricsPanel: React.FC<MetricsPanelProps> = ({ server, compact = false }) => {
   if (!server) {
     return (
       <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
@@ -53,7 +54,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ server }) => {
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
       <Text bold color="yellow">Live Metrics</Text>
-      <Text color="gray">Refreshed with the dashboard status poll.</Text>
+      {!compact && <Text color="gray">Refreshed with the dashboard status poll.</Text>}
       <Box marginTop={1} flexDirection="column">
         <MetricRow
           label="CPU"
@@ -70,14 +71,18 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ server }) => {
           value={isRunning && network ? String(network.connections) : '-'}
           color="green"
         />
-        <MetricRow
-          label="Received"
-          value={isRunning && network ? formatBytes(network.rxBytes) : '-'}
-        />
-        <MetricRow
-          label="Sent"
-          value={isRunning && network ? formatBytes(network.txBytes) : '-'}
-        />
+        {!compact && (
+          <MetricRow
+            label="Received"
+            value={isRunning && network ? formatBytes(network.rxBytes) : '-'}
+          />
+        )}
+        {!compact && (
+          <MetricRow
+            label="Sent"
+            value={isRunning && network ? formatBytes(network.txBytes) : '-'}
+          />
+        )}
       </Box>
     </Box>
   );

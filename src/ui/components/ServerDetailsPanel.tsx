@@ -5,6 +5,7 @@ import type { ServerInfo } from '../../types/server.js';
 interface ServerDetailsPanelProps {
   server?: ServerInfo;
   isProcessing?: boolean;
+  compact?: boolean;
 }
 
 function DetailRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
@@ -19,6 +20,7 @@ function DetailRow({ label, value, valueColor }: { label: string; value: string;
 export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
   server,
   isProcessing = false,
+  compact = false,
 }) => {
   if (!server) {
     return (
@@ -47,7 +49,7 @@ export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
           valueColor={server.portInUse ? 'green' : undefined}
         />
         <DetailRow label="PID" value={server.pid ? String(server.pid) : '-'} />
-        <DetailRow label="Uptime" value={server.uptime || '-'} />
+        {!compact && <DetailRow label="Uptime" value={server.uptime || '-'} />}
         <DetailRow label="Memory" value={server.memoryMB ? `${server.memoryMB} MB` : '-'} />
         <DetailRow label="CPU" value={server.cpuPercent !== undefined ? `${server.cpuPercent}%` : '-'} />
         <DetailRow

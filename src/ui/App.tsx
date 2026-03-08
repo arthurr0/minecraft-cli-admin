@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { render, Box, useApp, useInput } from 'ink';
+import { render, Box, useApp, useInput, useStdout } from 'ink';
 import { spawn } from 'child_process';
 import { Header } from './components/Header.js';
 import { ServerTable } from './components/ServerTable.js';
@@ -45,6 +45,7 @@ type MessageState = {
 
 const Dashboard: React.FC = () => {
   const { exit } = useApp();
+  const { stdout } = useStdout();
   const [selectedName, setSelectedName] = useState<string | undefined>();
   const [message, setMessage] = useState<MessageState | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -77,6 +78,10 @@ const Dashboard: React.FC = () => {
   } = useConfig();
   const configPath = configService.getConfigPath();
   const runningServers = servers.filter(server => server.status === 'running').length;
+  const terminalWidth = stdout?.columns ?? 120;
+  const isNarrow = terminalWidth < 100;
+  const isCompact = terminalWidth < 140;
+  const contentDirection = isCompact ? 'column' : 'row';
 
   useEffect(() => {
     if (servers.length === 0) {
@@ -324,6 +329,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          compact={isCompact}
           lastUpdated={lastUpdated}
         />
         <ConfirmDialog
@@ -347,6 +353,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          compact={isCompact}
           lastUpdated={lastUpdated}
           isRefreshing={isConfigLoading}
         />
@@ -375,6 +382,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          compact={isCompact}
           lastUpdated={lastUpdated}
           isRefreshing={isConfigLoading}
         />
@@ -415,6 +423,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          compact={isCompact}
           lastUpdated={lastUpdated}
         />
         <ServerForm
@@ -438,6 +447,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          compact={isCompact}
           lastUpdated={lastUpdated}
           isRefreshing={isConfigLoading}
         />
@@ -477,6 +487,7 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          compact={isCompact}
           lastUpdated={lastUpdated}
         />
         <ServerTypeForm
@@ -498,27 +509,36 @@ const Dashboard: React.FC = () => {
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
+          compact={isCompact}
           lastUpdated={lastUpdated}
           isRefreshing={isLoading || isProcessing}
         />
 
-      <Box flexDirection="row" marginTop={1}>
-        <Box flexDirection="column" width="58%">
+      <Box flexDirection={contentDirection} marginTop={1}>
+        <Box flexDirection="column" width={isCompact ? undefined : '58%'}>
           <ServerTable
             servers={servers}
             selectedIndex={selectedIndex}
             isLoading={isLoading}
             error={error}
+            compact={isCompact}
+            narrow={isNarrow}
           />
         </Box>
 
-        <Box flexDirection="column" width="42%" marginLeft={1}>
+        <Box
+          flexDirection="column"
+          width={isCompact ? undefined : '42%'}
+          marginLeft={isCompact ? 0 : 1}
+          marginTop={isCompact ? 1 : 0}
+        >
           <ServerDetailsPanel
             server={selectedServer}
             isProcessing={isProcessing}
+            compact={isNarrow}
           />
           <Box marginTop={1}>
-            <MetricsPanel server={selectedServer} />
+            <MetricsPanel server={selectedServer} compact={isNarrow} />
           </Box>
         </Box>
       </Box>
@@ -527,7 +547,7 @@ const Dashboard: React.FC = () => {
         <MessageBar message={message?.text} level={message?.level} />
       </Box>
 
-      <ActionBar showEditKey />
+      <ActionBar showEditKey compact={isCompact} />
     </Box>
   );
 };

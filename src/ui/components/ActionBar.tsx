@@ -3,14 +3,15 @@ import { Box, Text } from 'ink';
 
 interface ActionBarProps {
   showEditKey?: boolean;
+  compact?: boolean;
 }
 
-export const ActionBar: React.FC<ActionBarProps> = ({ showEditKey }) => {
+export const ActionBar: React.FC<ActionBarProps> = ({ showEditKey, compact = false }) => {
   return (
     <Box flexDirection="column" marginTop={1}>
       <Box borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
         <Text color="gray">Actions</Text>
-        <Box gap={2}>
+        <Box gap={2} flexDirection={compact ? 'column' : 'row'}>
           <Text>
             <Text color="green" bold>[s]</Text>
             <Text> Start</Text>
@@ -32,7 +33,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({ showEditKey }) => {
             <Text> Console</Text>
           </Text>
         </Box>
-        <Box gap={2}>
+        <Box gap={2} flexDirection={compact ? 'column' : 'row'}>
           <Text>
             <Text color="yellow" bold>[Enter]</Text>
             <Text> Refresh</Text>
