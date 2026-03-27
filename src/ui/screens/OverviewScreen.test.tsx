@@ -27,27 +27,26 @@ const servers: ServerInfo[] = [
 ];
 
 describe('OverviewScreen', () => {
-  it('renders fleet, details and event/log sections', () => {
+  it('renders the server deck as individual tiles', () => {
     const { lastFrame } = render(
       <OverviewScreen
         servers={servers}
-        selectedServer={servers[0]}
         selectedServerName="survival"
-        events={[{ timestamp: '10:00:00', level: 'info', text: 'Refresh done' }]}
-        logs={['[Server thread/INFO]: Done (1.2s)!']}
         notice={{ level: 'info', text: 'Ready' }}
         isLoading={false}
         error={null}
         processing={false}
         runningServers={1}
         lastUpdated="10:00:01"
-        compact={false}
+        columns={1}
       />,
     );
 
-    expect(lastFrame()).toContain('Mission Control');
+    expect(lastFrame()).toContain('Server Deck');
+    expect(lastFrame()).toContain('ACTIVE TILE');
     expect(lastFrame()).toContain('survival');
-    expect(lastFrame()).toContain('Event Stream');
-    expect(lastFrame()).toContain('Live Log Tail');
+    expect(lastFrame()).toContain('RUNNING');
+    expect(lastFrame()).not.toContain('Event Stream');
+    expect(lastFrame()).not.toContain('Live Log Tail');
   });
 });

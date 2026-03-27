@@ -6,7 +6,6 @@ import { backupService, screenService, serverService } from '../services/index.j
 import { configService } from '../services/config.service.js';
 import { validateMemoryFormat, validatePath, validatePort, validateServerName, validateServerTypeName } from '../utils/validator.js';
 import { useConfig } from './hooks/useConfig.js';
-import { useServerLogs } from './hooks/useServerLogs.js';
 import { useServers } from './hooks/useServers.js';
 import { appReducer, initialState, type Screen } from './core/state.js';
 import type { EventRecord, NoticeLevel, ServerEditorModel, TypeEditorModel } from './core/types.js';
@@ -32,6 +31,11 @@ function firstServerName(names: string[], fallback = 0): number {
   }
 
   return Math.min(Math.max(0, fallback), names.length - 1);
+}
+
+function getOverviewColumns(terminalWidth: number, serverCount: number): number {
+  const baseColumns = terminalWidth >= 168 ? 3 : terminalWidth >= 108 ? 2 : 1;
+  return Math.max(1, Math.min(baseColumns, Math.max(1, serverCount)));
 }
 
 const DashboardRoot: React.FC = () => {
@@ -67,10 +71,9 @@ const DashboardRoot: React.FC = () => {
     return servers.find((server) => server.name === state.selectedServerName) ?? servers[0];
   }, [servers, state.selectedServerName]);
 
-  const selectedLogs = useServerLogs(selectedServer?.config.path, 1200);
   const runningServers = servers.filter((server) => server.status === 'running').length;
   const terminalWidth = stdout?.columns ?? 120;
-  const compact = terminalWidth < 122;
+  const overviewColumns = getOverviewColumns(terminalWidth, servers.length);
 
   const configServerNames = useMemo(() => Object.keys(configServers), [configServers]);
   const configTypeNames = useMemo(() => Object.keys(serverTypes), [serverTypes]);
@@ -465,13 +468,19 @@ const DashboardRoot: React.FC = () => {
         return;
       }
 
-      if (key.upArrow || key.downArrow) {
+      if (key.upArrow || key.downArrow || key.leftArrow || key.rightArrow) {
         if (servers.length === 0) {
           return;
         }
 
         const currentIndex = selectedServer ? servers.findIndex((server) => server.name === selectedServer.name) : 0;
-        const delta = key.upArrow ? -1 : 1;
+        const delta = key.leftArrow
+          ? -1
+          : key.rightArrow
+            ? 1
+            : key.upArrow
+              ? -overviewColumns
+              : overviewColumns;
         const nextIndex = Math.max(0, Math.min(servers.length - 1, currentIndex + delta));
         dispatch({ type: 'setSelectedServerName', name: servers[nextIndex]?.name });
         return;
@@ -861,7 +870,7 @@ const DashboardRoot: React.FC = () => {
 
   const screenTitle = useMemo(() => {
     const titleMap: Record<Screen, string> = {
-      overview: 'Dashboard',
+      overview: 'Server Deck',
       'config-home': 'Config Studio',
       'config-servers': 'Server Registry',
       'config-server-editor': 'Server Editor',
@@ -877,7 +886,7 @@ const DashboardRoot: React.FC = () => {
     <Box flexDirection="column" padding={1}>
       <Box borderStyle="doubleSingle" borderColor="cyanBright" paddingX={1}>
         <Text>
-          <Text color="cyanBright" bold>MC-CLI NEXT UI</Text>
+          <Text color="cyanBright" bold>MC-CLI COMMAND DECK</Text>
           <Text color="gray"> | </Text>
           <Text color="whiteBright">{screenTitle}</Text>
           <Text color="gray"> | </Text>
@@ -889,17 +898,14 @@ const DashboardRoot: React.FC = () => {
         {state.screen === 'overview' ? (
           <OverviewScreen
             servers={servers}
-            selectedServer={selectedServer}
             selectedServerName={selectedServer?.name}
-            events={state.events}
-            logs={selectedLogs}
             notice={state.notice}
             isLoading={isLoading}
             error={error}
             processing={state.processing}
             runningServers={runningServers}
             lastUpdated={lastUpdated}
-            compact={compact}
+            columns={overviewColumns}
           />
         ) : null}
 
