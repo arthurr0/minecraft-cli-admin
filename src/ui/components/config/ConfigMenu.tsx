@@ -16,14 +16,14 @@ export const ConfigMenu: React.FC<ConfigMenuProps> = ({
 }) => {
   const items = [
     {
-      label: `Servers (${serverCount})`,
+      label: `Instance Registry (${serverCount})`,
       value: 'servers',
-      description: 'Add, edit, or remove Minecraft servers',
+      description: 'Create, edit, or remove Minecraft instances',
     },
     {
-      label: `Server Types (${typeCount})`,
+      label: `Profile Library (${typeCount})`,
       value: 'types',
-      description: 'Configure server types (memory, JVM flags)',
+      description: 'Manage runtime profiles: memory and JVM flags',
     },
   ];
 
@@ -35,7 +35,7 @@ export const ConfigMenu: React.FC<ConfigMenuProps> = ({
 
   return (
     <Menu
-      title="Configuration Editor"
+      title="Studio Configuration"
       items={items}
       onSelect={handleSelect}
       onBack={onBack}

@@ -61,11 +61,11 @@ export const SelectInput: React.FC<SelectInputProps> = ({
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color={focused ? 'cyan' : 'white'} bold={focused}>
+        <Text color={focused ? 'greenBright' : 'white'} bold={focused}>
           {label}:{' '}
         </Text>
         <Box>
-          <Text color={focused ? 'cyan' : 'white'}>
+          <Text color={focused ? 'greenBright' : 'white'}>
             {isOpen ? '[-]' : '[+]'} {selectedOption?.label || '(none)'}
           </Text>
         </Box>
@@ -75,8 +75,9 @@ export const SelectInput: React.FC<SelectInputProps> = ({
           {options.map((option, index) => (
             <Box key={option.value}>
               <Text
-                color={index === highlightedIndex ? 'cyan' : 'white'}
+                color={index === highlightedIndex ? 'black' : 'white'}
                 bold={index === highlightedIndex}
+                inverse={index === highlightedIndex}
               >
                 {index === highlightedIndex ? '> ' : '  '}
                 {option.label}

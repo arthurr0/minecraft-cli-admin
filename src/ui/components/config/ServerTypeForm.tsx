@@ -118,9 +118,9 @@ export const ServerTypeForm: React.FC<ServerTypeFormProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="single" borderColor="cyan" paddingX={1}>
-        <Text color="cyan" bold>
-          {isNew ? 'Add New Server Type' : `Edit Type: ${typeName}`}
+      <Box borderStyle="singleDouble" borderColor="greenBright" paddingX={1}>
+        <Text color="greenBright" bold>
+          {isNew ? 'Create Profile' : `Edit Profile: ${typeName}`}
         </Text>
       </Box>
 
@@ -171,13 +171,13 @@ export const ServerTypeForm: React.FC<ServerTypeFormProps> = ({
 
       <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1}>
         <Text color="gray">
-          Tab=next field  Ctrl+S=save  Esc=cancel
+          [Tab] Next field  [Shift+Tab] Previous  [Ctrl+S] Save  [Esc] Cancel
         </Text>
       </Box>
 
       {isSubmitting && (
         <Box marginTop={1}>
-          <Text color="yellow">Saving...</Text>
+          <Text color="yellowBright">Saving profile...</Text>
         </Box>
       )}
     </Box>

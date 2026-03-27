@@ -103,10 +103,10 @@ export const TextInput: React.FC<TextInputProps> = ({
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color={focused ? 'cyan' : 'white'} bold={focused}>
+        <Text color={focused ? 'greenBright' : 'white'} bold={focused}>
           {label}:{' '}
         </Text>
-        <Box borderStyle={focused ? 'single' : undefined} borderColor={error ? 'red' : 'gray'} paddingX={error ? 0 : undefined}>
+        <Box borderStyle={focused ? 'single' : undefined} borderColor={error ? 'redBright' : focused ? 'greenBright' : 'gray'} paddingX={error ? 0 : undefined}>
           {renderValue()}
         </Box>
       </Box>

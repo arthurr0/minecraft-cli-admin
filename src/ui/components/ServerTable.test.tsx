@@ -35,7 +35,7 @@ describe('ServerTable', () => {
       />
     );
 
-    expect(lastFrame()).toContain('Fleet Overview');
+    expect(lastFrame()).toContain('Fleet Matrix');
     expect(lastFrame()).toContain('survival');
     expect(lastFrame()).toContain('RUNNING');
     expect(lastFrame()).toContain('25565');
@@ -52,7 +52,7 @@ describe('ServerTable', () => {
       />
     );
 
-    expect(lastFrame()).toContain('Failed to load server status');
+    expect(lastFrame()).toContain('Telemetry load failed');
     expect(lastFrame()).toContain('screen binary not available');
   });
 });

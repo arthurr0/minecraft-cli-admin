@@ -58,20 +58,20 @@ export const ServerListView: React.FC<ServerListViewProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="single" borderColor="cyan" paddingX={1}>
-        <Text color="cyan" bold>Servers</Text>
+      <Box borderStyle="singleDouble" borderColor="greenBright" paddingX={1}>
+        <Text color="greenBright" bold>Instance Registry</Text>
       </Box>
 
       <Box flexDirection="column" marginTop={1}>
         <Box marginBottom={1}>
           <Text color="gray" bold>
-            {'  NAME'.padEnd(20)}{'TYPE'.padEnd(20)}{'PATH'.padEnd(30)}PORT
+            {'  INSTANCE'.padEnd(22)}{'PROFILE'.padEnd(20)}{'PATH'.padEnd(32)}PORT
           </Text>
         </Box>
 
         {serverNames.length === 0 ? (
           <Box>
-            <Text color="gray" italic>  No servers configured</Text>
+            <Text color="gray" italic>  No instances configured</Text>
           </Box>
         ) : (
           serverNames.map((name, index) => {
@@ -79,11 +79,11 @@ export const ServerListView: React.FC<ServerListViewProps> = ({
             const isSelected = index === selectedIndex;
             return (
               <Box key={name}>
-                <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
+                <Text color={isSelected ? 'black' : 'white'} bold={isSelected} inverse={isSelected}>
                   {isSelected ? '> ' : '  '}
-                  {name.padEnd(18)}
+                  {name.padEnd(20)}
                   {server.type.padEnd(20)}
-                  {(server.path.length > 28 ? server.path.slice(0, 25) + '...' : server.path).padEnd(30)}
+                  {(server.path.length > 30 ? server.path.slice(0, 27) + '...' : server.path).padEnd(32)}
                   {server.port || '-'}
                 </Text>
               </Box>
@@ -92,9 +92,9 @@ export const ServerListView: React.FC<ServerListViewProps> = ({
         )}
       </Box>
 
-      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1}>
+      <Box marginTop={1} borderStyle="single" borderColor="yellowBright" paddingX={1}>
         <Text color="gray">
-          a=add  e/Enter=edit  d=delete  Esc=back
+          [A] Add  [E]/[Enter] Edit  [D] Delete  [Esc] Back
         </Text>
       </Box>
     </Box>

@@ -130,9 +130,9 @@ export const ServerForm: React.FC<ServerFormProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="single" borderColor="cyan" paddingX={1}>
-        <Text color="cyan" bold>
-          {isNew ? 'Add New Server' : `Edit Server: ${serverName}`}
+      <Box borderStyle="singleDouble" borderColor="greenBright" paddingX={1}>
+        <Text color="greenBright" bold>
+          {isNew ? 'Create Instance' : `Edit Instance: ${serverName}`}
         </Text>
       </Box>
 
@@ -186,13 +186,13 @@ export const ServerForm: React.FC<ServerFormProps> = ({
 
       <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1}>
         <Text color="gray">
-          Tab=next field  Ctrl+S=save  Esc=cancel
+          [Tab] Next field  [Shift+Tab] Previous  [Ctrl+S] Save  [Esc] Cancel
         </Text>
       </Box>
 
       {isSubmitting && (
         <Box marginTop={1}>
-          <Text color="yellow">Saving...</Text>
+          <Text color="yellowBright">Saving instance...</Text>
         </Box>
       )}
     </Box>

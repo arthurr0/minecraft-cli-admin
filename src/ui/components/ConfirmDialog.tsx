@@ -45,8 +45,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="single" borderColor="yellow" paddingX={1} paddingY={0}>
-        <Text color="yellow" bold>Confirm</Text>
+      <Box borderStyle="singleDouble" borderColor="yellowBright" paddingX={1} paddingY={0}>
+        <Text color="yellowBright" bold>Confirmation Gate</Text>
       </Box>
       <Box marginTop={1}>
         <Text>{message}</Text>
@@ -54,20 +54,20 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       <Box marginTop={1} gap={2}>
         <Box>
           <Text
-            color={selectedIndex === 0 ? 'green' : 'white'}
+            color={selectedIndex === 0 ? 'black' : 'white'}
             bold={selectedIndex === 0}
             inverse={selectedIndex === 0}
           >
-            {' '}[y] {confirmLabel}{' '}
+            {' '}[Y] {confirmLabel}{' '}
           </Text>
         </Box>
         <Box>
           <Text
-            color={selectedIndex === 1 ? 'red' : 'white'}
+            color={selectedIndex === 1 ? 'black' : 'white'}
             bold={selectedIndex === 1}
             inverse={selectedIndex === 1}
           >
-            {' '}[n] {cancelLabel}{' '}
+            {' '}[N] {cancelLabel}{' '}
           </Text>
         </Box>
       </Box>

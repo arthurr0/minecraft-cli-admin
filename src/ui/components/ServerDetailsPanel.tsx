@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import type { ServerInfo } from '../../types/server.js';
+import { createMeter } from '../utils/meter.js';
 
 interface ServerDetailsPanelProps {
   server?: ServerInfo;
@@ -11,7 +12,7 @@ interface ServerDetailsPanelProps {
 function DetailRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
   return (
     <Box justifyContent="space-between">
-      <Text color="gray">{label.padEnd(11)}</Text>
+      <Text color="gray">{label.padEnd(13)}</Text>
       <Text color={valueColor}>{value}</Text>
     </Box>
   );
@@ -24,52 +25,59 @@ export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
 }) => {
   if (!server) {
     return (
-      <Box flexDirection="column" borderStyle="round" borderColor="gray" paddingX={1}>
-        <Text bold color="yellow">Server Details</Text>
+      <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1}>
+        <Text bold color="yellowBright">Instance Profile</Text>
         <Box marginTop={1}>
-          <Text color="gray">No server configured yet. Add one from the config menu.</Text>
+          <Text color="gray">No instance selected. Pick one in Fleet Matrix.</Text>
         </Box>
       </Box>
     );
   }
 
-  const statusColor = server.status === 'running' ? 'green' : 'red';
+  const statusColor =
+    server.status === 'running' ? 'greenBright' :
+    server.status === 'starting' ? 'yellowBright' :
+    server.status === 'stopping' ? 'yellow' :
+    'redBright';
   const isRunning = server.status === 'running';
   const network = server.network;
+  const meterWidth = compact ? 8 : 12;
+  const memoryMeter = createMeter(server.memoryMB, 8192, meterWidth);
+  const cpuMeter = createMeter(server.cpuPercent, 100, meterWidth);
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="blue" paddingX={1}>
-      <Text bold color="blue">Selected Server</Text>
+    <Box flexDirection="column" borderStyle="singleDouble" borderColor="cyan" paddingX={1}>
+      <Text bold color="cyan">Instance Profile</Text>
       <Box marginTop={1} flexDirection="column">
-        <DetailRow label="Name" value={server.name} valueColor="cyan" />
+        <DetailRow label="Name" value={server.name} valueColor="cyanBright" />
         <DetailRow label="Status" value={server.status.toUpperCase()} valueColor={statusColor} />
-        <DetailRow label="Type" value={server.config.type} />
-        <DetailRow label="Path" value={server.config.path} />
+        <DetailRow label="Profile" value={server.config.type} />
+        <DetailRow label="Path" value={server.config.path.length > 30 ? `${server.config.path.slice(0, 27)}...` : server.config.path} />
         <DetailRow
           label="Port"
           value={server.config.port ? String(server.config.port) : 'N/A'}
-          valueColor={server.portInUse ? 'green' : undefined}
+          valueColor={server.portInUse ? 'greenBright' : undefined}
         />
         <DetailRow label="PID" value={server.pid ? String(server.pid) : '-'} />
-        {!compact && <DetailRow label="Uptime" value={server.uptime || '-'} />}
-        <DetailRow label="Memory" value={server.memoryMB ? `${server.memoryMB} MB` : '-'} />
-        <DetailRow label="CPU" value={server.cpuPercent !== undefined ? `${server.cpuPercent}%` : '-'} />
+        <DetailRow label="Uptime" value={server.uptime || '-'} />
+        <DetailRow label="Memory" value={`${memoryMeter} ${server.memoryMB ? `${server.memoryMB}MB` : '-'}`} valueColor="green" />
+        <DetailRow label="CPU" value={`${cpuMeter} ${server.cpuPercent !== undefined ? `${server.cpuPercent}%` : '-'}`} valueColor="cyan" />
         <DetailRow
-          label="Action"
-          value={isProcessing ? 'Processing request...' : 'Idle'}
-          valueColor={isProcessing ? 'yellow' : 'green'}
+          label="Pipeline"
+          value={isProcessing ? 'Executing request...' : 'Ready'}
+          valueColor={isProcessing ? 'yellowBright' : 'greenBright'}
         />
       </Box>
       <Box marginTop={1}>
-        <Text color="gray">{'─'.repeat(compact ? 28 : 36)}</Text>
+        <Text color="gray">{'─'.repeat(compact ? 36 : 48)}</Text>
       </Box>
       <Box marginTop={1} flexDirection="column">
-        <Text bold color="yellow">Runtime Metrics</Text>
+        <Text bold color="yellowBright">Runtime Metrics</Text>
         <Box marginTop={1} flexDirection="column">
           <DetailRow
             label="Total conn"
             value={isRunning && network ? String(network.connections) : '-'}
-            valueColor="green"
+            valueColor="greenBright"
           />
           <DetailRow
             label="TCP sockets"
@@ -90,10 +98,12 @@ export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
           <DetailRow
             label="Received"
             value={isRunning && network?.rxBytes !== undefined ? `${Math.round(network.rxBytes / 1024)} KB` : '-'}
+            valueColor="cyan"
           />
           <DetailRow
             label="Sent"
             value={isRunning && network?.txBytes !== undefined ? `${Math.round(network.txBytes / 1024)} KB` : '-'}
+            valueColor="cyan"
           />
         </Box>
       </Box>

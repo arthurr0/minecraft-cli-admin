@@ -9,44 +9,44 @@ interface ActionBarProps {
 export const ActionBar: React.FC<ActionBarProps> = ({ showEditKey, compact = false }) => {
   return (
     <Box flexDirection="column" marginTop={1}>
-      <Box borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
-        <Text color="gray">Actions</Text>
+      <Box borderStyle="single" borderColor="cyan" paddingX={1} flexDirection="column">
+        <Text color="cyan" bold>Command Deck</Text>
         <Box gap={2} flexDirection={compact ? 'column' : 'row'}>
           <Text>
-            <Text color="green" bold>[s]</Text>
+            <Text color="greenBright" bold>[S]</Text>
             <Text> Start</Text>
           </Text>
           <Text>
-            <Text color="red" bold>[x]</Text>
+            <Text color="redBright" bold>[X]</Text>
             <Text> Stop</Text>
           </Text>
           <Text>
-            <Text color="yellow" bold>[r]</Text>
+            <Text color="yellowBright" bold>[R]</Text>
             <Text> Restart</Text>
           </Text>
           <Text>
-            <Text color="cyan" bold>[b]</Text>
+            <Text color="blueBright" bold>[B]</Text>
             <Text> Backup</Text>
           </Text>
           <Text>
-            <Text color="white" bold>[c]</Text>
+            <Text color="whiteBright" bold>[C]</Text>
             <Text> Console</Text>
           </Text>
         </Box>
         <Box gap={2} flexDirection={compact ? 'column' : 'row'}>
           <Text>
-            <Text color="yellow" bold>[Enter]</Text>
-            <Text> Refresh</Text>
+            <Text color="yellowBright" bold>[Enter]</Text>
+            <Text> Sync</Text>
           </Text>
           {showEditKey && (
             <Text>
-              <Text color="gray" bold>[e]</Text>
-              <Text> Config</Text>
+              <Text color="magentaBright" bold>[E]</Text>
+              <Text> Studio Config</Text>
             </Text>
           )}
           <Text>
-            <Text color="magenta" bold>[q]</Text>
-            <Text> Quit</Text>
+            <Text color="red" bold>[Q]</Text>
+            <Text> Exit</Text>
           </Text>
         </Box>
       </Box>

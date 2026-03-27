@@ -22,22 +22,29 @@ export const Header: React.FC<HeaderProps> = ({
   lastUpdated,
   isRefreshing = false,
 }) => {
+  const barWidth = compact ? 14 : 22;
+  const ratio = totalServers === 0 ? 0 : runningServers / totalServers;
+  const filled = Math.max(0, Math.min(barWidth, Math.round(ratio * barWidth)));
+  const healthBar = `${'█'.repeat(filled)}${'░'.repeat(barWidth - filled)}`;
+
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-      <Box flexDirection={compact ? 'column' : 'row'} justifyContent="space-between">
-        <Text bold color="cyan">{title}</Text>
-        <Text color="gray">
-          {isRefreshing ? 'Refreshing' : `Updated ${lastUpdated ?? '--:--:--'}`}
+    <Box flexDirection="column" borderStyle="double" borderColor="greenBright" paddingX={1}>
+      <Box flexDirection={compact ? 'column' : 'row'} justifyContent="space-between" gap={compact ? 0 : 2}>
+        <Text bold color="greenBright">{title}</Text>
+        <Text color={isRefreshing ? 'yellowBright' : 'gray'}>
+          {isRefreshing ? 'Live sync in progress' : `Updated ${lastUpdated ?? '--:--:--'}`}
         </Text>
       </Box>
-      <Box flexDirection={compact ? 'column' : 'row'} justifyContent="space-between">
+      <Box flexDirection={compact ? 'column' : 'row'} justifyContent="space-between" gap={compact ? 0 : 2}>
         <Text color="white">
-          Mode: <Text color="yellow">{activeMode}</Text>
+          Mode <Text color="yellowBright" bold>{activeMode}</Text>
           {'  '}
-          Servers: <Text color="green">{runningServers}</Text>/<Text>{totalServers}</Text>
+          Fleet <Text color="greenBright" bold>{runningServers}</Text>/<Text>{totalServers}</Text>
+          {'  '}
+          <Text color="greenBright">{healthBar}</Text>
         </Text>
         <Text color="gray" wrap="truncate-end">
-          Config: {configPath}
+          Registry {configPath}
         </Text>
       </Box>
     </Box>

@@ -129,10 +129,10 @@ export const ListInput: React.FC<ListInputProps> = ({
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color={focused ? 'cyan' : 'white'} bold={focused}>
+        <Text color={focused ? 'greenBright' : 'white'} bold={focused}>
           {label}:{' '}
         </Text>
-        <Text color={focused ? 'cyan' : 'white'}>
+        <Text color={focused ? 'greenBright' : 'white'}>
           {isExpanded ? '[-]' : '[+]'} {items.length} items
         </Text>
       </Box>
@@ -141,22 +141,24 @@ export const ListInput: React.FC<ListInputProps> = ({
           {items.map((item, index) => (
             <Box key={index}>
               <Text
-                color={index === selectedIndex ? 'cyan' : 'white'}
+                color={index === selectedIndex ? 'black' : 'white'}
                 bold={index === selectedIndex}
+                inverse={index === selectedIndex}
               >
                 {index === selectedIndex ? '> ' : '  '}
               </Text>
               {editingIndex === index ? (
                 renderEditField(editValue)
               ) : (
-                <Text color={index === selectedIndex ? 'cyan' : 'gray'}>{item}</Text>
+                <Text color={index === selectedIndex ? 'greenBright' : 'gray'}>{item}</Text>
               )}
             </Box>
           ))}
           <Box>
             <Text
-              color={selectedIndex === items.length ? 'cyan' : 'gray'}
+              color={selectedIndex === items.length ? 'black' : 'gray'}
               bold={selectedIndex === items.length}
+              inverse={selectedIndex === items.length}
             >
               {selectedIndex === items.length ? '> ' : '  '}
             </Text>
@@ -164,12 +166,12 @@ export const ListInput: React.FC<ListInputProps> = ({
               renderEditField(editValue)
             ) : (
               <Text color="gray" italic>
-                [a] Add new item
+                [A] Add new item
               </Text>
             )}
           </Box>
           <Box marginTop={1}>
-            <Text color="gray">Enter=edit  a=add  d=delete  Esc=close</Text>
+            <Text color="gray">[Enter] Edit  [A] Add  [D] Delete  [Esc] Close</Text>
           </Box>
         </Box>
       )}

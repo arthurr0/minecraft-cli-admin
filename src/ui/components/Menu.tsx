@@ -46,16 +46,17 @@ export const Menu: React.FC<MenuProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="single" borderColor="cyan" paddingX={1}>
-        <Text color="cyan" bold>{title}</Text>
+      <Box borderStyle="singleDouble" borderColor="greenBright" paddingX={1}>
+        <Text color="greenBright" bold>{title}</Text>
       </Box>
       <Box flexDirection="column" marginTop={1}>
         {items.map((item, index) => (
           <Box key={item.value} flexDirection="column">
             <Box>
               <Text
-                color={index === selectedIndex ? 'cyan' : 'white'}
+                color={index === selectedIndex ? 'black' : 'white'}
                 bold={index === selectedIndex}
+                inverse={index === selectedIndex}
               >
                 {index === selectedIndex ? '> ' : '  '}
                 {item.label}
@@ -69,9 +70,9 @@ export const Menu: React.FC<MenuProps> = ({
           </Box>
         ))}
       </Box>
-      <Box marginTop={1}>
+      <Box marginTop={1} borderStyle="single" borderColor="yellowBright" paddingX={1}>
         <Text color="gray">
-          {onBack ? 'Enter=select  Esc=back' : 'Enter=select'}
+          {onBack ? '[Enter] Select  [Esc] Back' : '[Enter] Select'}
         </Text>
       </Box>
     </Box>

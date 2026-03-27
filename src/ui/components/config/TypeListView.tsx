@@ -58,20 +58,20 @@ export const TypeListView: React.FC<TypeListViewProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="single" borderColor="cyan" paddingX={1}>
-        <Text color="cyan" bold>Server Types</Text>
+      <Box borderStyle="singleDouble" borderColor="greenBright" paddingX={1}>
+        <Text color="greenBright" bold>Profile Library</Text>
       </Box>
 
       <Box flexDirection="column" marginTop={1}>
         <Box marginBottom={1}>
           <Text color="gray" bold>
-            {'  NAME'.padEnd(25)}{'MEMORY'.padEnd(12)}{'MIN'.padEnd(12)}FLAGS
+            {'  PROFILE'.padEnd(25)}{'MEMORY'.padEnd(12)}{'MIN'.padEnd(12)}FLAGS
           </Text>
         </Box>
 
         {typeNames.length === 0 ? (
           <Box>
-            <Text color="gray" italic>  No server types configured</Text>
+            <Text color="gray" italic>  No profiles configured</Text>
           </Box>
         ) : (
           typeNames.map((name, index) => {
@@ -79,7 +79,7 @@ export const TypeListView: React.FC<TypeListViewProps> = ({
             const isSelected = index === selectedIndex;
             return (
               <Box key={name}>
-                <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected}>
+                <Text color={isSelected ? 'black' : 'white'} bold={isSelected} inverse={isSelected}>
                   {isSelected ? '> ' : '  '}
                   {name.padEnd(23)}
                   {type.memory.padEnd(12)}
@@ -92,9 +92,9 @@ export const TypeListView: React.FC<TypeListViewProps> = ({
         )}
       </Box>
 
-      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1}>
+      <Box marginTop={1} borderStyle="single" borderColor="yellowBright" paddingX={1}>
         <Text color="gray">
-          a=add  e/Enter=edit  d=delete  Esc=back
+          [A] Add  [E]/[Enter] Edit  [D] Delete  [Esc] Back
         </Text>
       </Box>
     </Box>

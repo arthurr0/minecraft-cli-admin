@@ -9,17 +9,17 @@ export interface MessageBarProps {
   fullWidth?: boolean;
 }
 
-const LEVEL_STYLES: Record<MessageLevel, { color: 'blue' | 'green' | 'red'; label: string }> = {
-  info: { color: 'blue', label: 'INFO' },
-  success: { color: 'green', label: 'OK' },
-  error: { color: 'red', label: 'ERROR' },
+const LEVEL_STYLES: Record<MessageLevel, { color: 'blueBright' | 'greenBright' | 'redBright'; label: string }> = {
+  info: { color: 'blueBright', label: 'STREAM' },
+  success: { color: 'greenBright', label: 'SUCCESS' },
+  error: { color: 'redBright', label: 'ALERT' },
 };
 
 export const MessageBar: React.FC<MessageBarProps> = ({ message, level = 'info', fullWidth = false }) => {
   if (!message) {
     return (
       <Box borderStyle="single" borderColor="gray" paddingX={1} width={fullWidth ? '100%' : undefined}>
-        <Text color="gray">Ready. Select a server to inspect details or trigger an action.</Text>
+        <Text color="gray">Event Stream idle. Select an instance and run a command.</Text>
       </Box>
     );
   }
@@ -31,7 +31,7 @@ export const MessageBar: React.FC<MessageBarProps> = ({ message, level = 'info',
       <Text color={style.color} bold>
         {style.label}
       </Text>
-      <Text> </Text>
+      <Text color="gray"> | </Text>
       <Text wrap="truncate-end">{message}</Text>
     </Box>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { render, Box, useApp, useInput, useStdout } from 'ink';
+import { render, Box, Text, useApp, useInput, useStdout } from 'ink';
 import { spawn } from 'child_process';
 import { Header } from './components/Header.js';
 import { ServerTable } from './components/ServerTable.js';
@@ -15,6 +15,7 @@ import {
 } from './components/config/index.js';
 import { useServers } from './hooks/useServers.js';
 import { useConfig } from './hooks/useConfig.js';
+import { useServerLogs } from './hooks/useServerLogs.js';
 import { serverService, backupService, screenService } from '../services/index.js';
 import { configService } from '../services/config.service.js';
 
@@ -43,11 +44,21 @@ type MessageState = {
   text: string;
 };
 
+interface EventRecord {
+  timestamp: string;
+  level: MessageState['level'];
+  text: string;
+}
+
+const APP_TITLE = 'Minecraft Control Studio';
+const EVENT_LIMIT = 6;
+
 const Dashboard: React.FC = () => {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const [selectedName, setSelectedName] = useState<string | undefined>();
   const [message, setMessage] = useState<MessageState | undefined>();
+  const [events, setEvents] = useState<EventRecord[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [mode, setMode] = useState<AppMode>('dashboard');
@@ -78,9 +89,10 @@ const Dashboard: React.FC = () => {
   } = useConfig();
   const configPath = configService.getConfigPath();
   const runningServers = servers.filter(server => server.status === 'running').length;
+  const selectedLogs = useServerLogs(selectedServer?.config.path, 1500);
   const terminalWidth = stdout?.columns ?? 120;
-  const isNarrow = terminalWidth < 100;
-  const isCompact = terminalWidth < 140;
+  const isNarrow = terminalWidth < 110;
+  const isCompact = terminalWidth < 150;
   const contentDirection = isCompact ? 'column' : 'row';
 
   useEffect(() => {
@@ -106,6 +118,9 @@ const Dashboard: React.FC = () => {
     if (messageTimeoutRef.current) {
       clearTimeout(messageTimeoutRef.current);
     }
+
+    const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    setEvents(previous => [{ timestamp, level, text }, ...previous].slice(0, EVENT_LIMIT));
 
     setMessage({ text, level });
 
@@ -324,7 +339,7 @@ const Dashboard: React.FC = () => {
     return (
       <Box flexDirection="column" padding={1}>
         <Header
-          title="Minecraft Server Manager"
+          title={APP_TITLE}
           activeMode="Confirm Delete"
           totalServers={servers.length}
           runningServers={runningServers}
@@ -348,7 +363,7 @@ const Dashboard: React.FC = () => {
     return (
       <Box flexDirection="column" padding={1}>
         <Header
-          title="Minecraft Server Manager"
+          title={APP_TITLE}
           activeMode={isConfigLoading ? 'Config Loading' : 'Config Menu'}
           totalServers={servers.length}
           runningServers={runningServers}
@@ -377,8 +392,8 @@ const Dashboard: React.FC = () => {
     return (
       <Box flexDirection="column" padding={1}>
         <Header
-          title="Minecraft Server Manager"
-          activeMode="Server Config"
+          title={APP_TITLE}
+          activeMode="Server Registry"
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
@@ -418,8 +433,8 @@ const Dashboard: React.FC = () => {
     return (
       <Box flexDirection="column" padding={1}>
         <Header
-          title="Minecraft Server Manager"
-          activeMode={editing.isNew ? 'Create Server' : 'Edit Server'}
+          title={APP_TITLE}
+          activeMode={editing.isNew ? 'Create Instance' : 'Edit Instance'}
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
@@ -442,8 +457,8 @@ const Dashboard: React.FC = () => {
     return (
       <Box flexDirection="column" padding={1}>
         <Header
-          title="Minecraft Server Manager"
-          activeMode="Type Config"
+          title={APP_TITLE}
+          activeMode="Profile Registry"
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
@@ -482,8 +497,8 @@ const Dashboard: React.FC = () => {
     return (
       <Box flexDirection="column" padding={1}>
         <Header
-          title="Minecraft Server Manager"
-          activeMode={editing.isNew ? 'Create Type' : 'Edit Type'}
+          title={APP_TITLE}
+          activeMode={editing.isNew ? 'Create Profile' : 'Edit Profile'}
           totalServers={servers.length}
           runningServers={runningServers}
           configPath={configPath}
@@ -504,7 +519,7 @@ const Dashboard: React.FC = () => {
   return (
     <Box flexDirection="column" padding={1}>
         <Header
-          title="Minecraft Server Manager"
+          title={APP_TITLE}
           activeMode="Dashboard"
           totalServers={servers.length}
           runningServers={runningServers}
@@ -515,7 +530,7 @@ const Dashboard: React.FC = () => {
         />
 
       <Box flexDirection={contentDirection} alignItems="flex-start" marginTop={1}>
-        <Box flexDirection="column" width={isCompact ? '100%' : '62%'}>
+        <Box flexDirection="column" width={isCompact ? '100%' : '58%'}>
           <ServerTable
             servers={servers}
             selectedIndex={selectedIndex}
@@ -528,7 +543,7 @@ const Dashboard: React.FC = () => {
 
         <Box
           flexDirection="column"
-          width={isCompact ? '100%' : '38%'}
+          width={isCompact ? '100%' : '42%'}
           marginLeft={isCompact ? 0 : 1}
           marginTop={isCompact ? 1 : 0}
         >
@@ -537,6 +552,65 @@ const Dashboard: React.FC = () => {
             isProcessing={isProcessing}
             compact={isNarrow}
           />
+        </Box>
+      </Box>
+
+      <Box flexDirection={contentDirection} alignItems="flex-start" marginTop={1}>
+        <Box flexDirection="column" width={isCompact ? '100%' : '58%'}>
+          <Box borderStyle="single" borderColor="blueBright" paddingX={1} flexDirection="column">
+            <Text bold color="blueBright">Event Stream</Text>
+            <Box marginTop={1} flexDirection="column">
+              {events.length === 0 ? (
+                <Text color="gray">No events yet. Trigger an action to populate this stream.</Text>
+              ) : (
+                events.map((event, index) => {
+                  const levelColor = event.level === 'success'
+                    ? 'greenBright'
+                    : event.level === 'error'
+                      ? 'redBright'
+                      : 'blueBright';
+                  const levelLabel = event.level === 'success'
+                    ? 'SUCCESS'
+                    : event.level === 'error'
+                      ? 'ALERT'
+                      : 'INFO';
+
+                  return (
+                    <Text key={`${event.timestamp}-${index}`} wrap="truncate-end">
+                      <Text color="gray">[{event.timestamp}] </Text>
+                      <Text color={levelColor}>{levelLabel}</Text>
+                      <Text color="gray"> | </Text>
+                      <Text>{event.text}</Text>
+                    </Text>
+                  );
+                })
+              )}
+            </Box>
+          </Box>
+        </Box>
+
+        <Box
+          flexDirection="column"
+          width={isCompact ? '100%' : '42%'}
+          marginLeft={isCompact ? 0 : 1}
+          marginTop={isCompact ? 1 : 0}
+        >
+          <Box borderStyle="single" borderColor="yellowBright" paddingX={1} flexDirection="column">
+            <Text bold color="yellowBright">Live Log Tail</Text>
+            <Box marginTop={1} flexDirection="column">
+              {!selectedServer ? (
+                <Text color="gray">Select an instance to read latest logs.</Text>
+              ) : selectedLogs.length === 0 ? (
+                <Text color="gray">No recent log lines available for {selectedServer.name}.</Text>
+              ) : (
+                selectedLogs.slice(-6).map((line, index) => (
+                  <Text key={`${selectedServer.name}-${index}`} color="gray" wrap="truncate-end">
+                    {line}
+                  </Text>
+                ))
+              )}
+            </Box>
+          </Box>
         </Box>
       </Box>
 
