@@ -129,12 +129,14 @@ export const ListInput: React.FC<ListInputProps> = ({
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color={focused ? 'greenBright' : 'white'} bold={focused}>
+        <Text color={focused ? 'yellowBright' : 'gray'} bold={focused}>
           {label}:{' '}
         </Text>
-        <Text color={focused ? 'greenBright' : 'white'}>
-          {isExpanded ? '[-]' : '[+]'} {items.length} items
-        </Text>
+        <Box borderStyle={focused ? 'doubleSingle' : 'single'} borderColor={error ? 'redBright' : focused ? 'cyan' : 'gray'} paddingX={1}>
+          <Text color={focused ? 'whiteBright' : 'white'}>
+            {isExpanded ? 'OPEN' : 'CLOSED'} :: {items.length} ITEMS
+          </Text>
+        </Box>
       </Box>
       {isExpanded && (
         <Box flexDirection="column" marginLeft={2}>
@@ -166,18 +168,18 @@ export const ListInput: React.FC<ListInputProps> = ({
               renderEditField(editValue)
             ) : (
               <Text color="gray" italic>
-                [A] Add new item
+                [A] ADD NEW ITEM
               </Text>
             )}
           </Box>
           <Box marginTop={1}>
-            <Text color="gray">[Enter] Edit  [A] Add  [D] Delete  [Esc] Close</Text>
+            <Text color="gray">[ENTER] EDIT  [A] ADD  [D] DELETE  [ESC] CLOSE</Text>
           </Box>
         </Box>
       )}
       {error && (
         <Box marginLeft={label.length + 2}>
-          <Text color="red">{error}</Text>
+          <Text color="redBright">{error.toUpperCase()}</Text>
         </Box>
       )}
     </Box>

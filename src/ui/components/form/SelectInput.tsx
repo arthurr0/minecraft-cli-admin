@@ -61,12 +61,12 @@ export const SelectInput: React.FC<SelectInputProps> = ({
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color={focused ? 'greenBright' : 'white'} bold={focused}>
+        <Text color={focused ? 'yellowBright' : 'gray'} bold={focused}>
           {label}:{' '}
         </Text>
-        <Box>
-          <Text color={focused ? 'greenBright' : 'white'}>
-            {isOpen ? '[-]' : '[+]'} {selectedOption?.label || '(none)'}
+        <Box borderStyle={focused ? 'doubleSingle' : 'single'} borderColor={error ? 'redBright' : focused ? 'cyan' : 'gray'} paddingX={1}>
+          <Text color={focused ? 'whiteBright' : 'white'}>
+            {isOpen ? 'OPEN' : 'CLOSED'} :: {selectedOption?.label || '(none)'}
           </Text>
         </Box>
       </Box>
@@ -88,7 +88,7 @@ export const SelectInput: React.FC<SelectInputProps> = ({
       )}
       {error && (
         <Box marginLeft={label.length + 2}>
-          <Text color="red">{error}</Text>
+          <Text color="redBright">{error.toUpperCase()}</Text>
         </Box>
       )}
     </Box>

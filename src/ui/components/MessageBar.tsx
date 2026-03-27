@@ -9,29 +9,34 @@ export interface MessageBarProps {
   fullWidth?: boolean;
 }
 
-const LEVEL_STYLES: Record<MessageLevel, { color: 'blueBright' | 'greenBright' | 'redBright'; label: string }> = {
-  info: { color: 'blueBright', label: 'STREAM' },
-  success: { color: 'greenBright', label: 'SUCCESS' },
-  error: { color: 'redBright', label: 'ALERT' },
+const STYLE_MAP: Record<MessageLevel, {
+  border: 'blueBright' | 'greenBright' | 'redBright';
+  tag: string;
+}> = {
+  info: { border: 'blueBright', tag: 'INFO' },
+  success: { border: 'greenBright', tag: 'OK' },
+  error: { border: 'redBright', tag: 'FAIL' },
 };
 
-export const MessageBar: React.FC<MessageBarProps> = ({ message, level = 'info', fullWidth = false }) => {
+export const MessageBar: React.FC<MessageBarProps> = ({
+  message,
+  level = 'info',
+  fullWidth = false,
+}) => {
   if (!message) {
     return (
-      <Box borderStyle="single" borderColor="gray" paddingX={1} width={fullWidth ? '100%' : undefined}>
-        <Text color="gray">Event Stream idle. Select an instance and run a command.</Text>
+      <Box borderStyle="doubleSingle" borderColor="gray" paddingX={1} width={fullWidth ? '100%' : undefined}>
+        <Text color="gray">SYSTEM IDLE :: choose instance and execute command</Text>
       </Box>
     );
   }
 
-  const style = LEVEL_STYLES[level];
+  const style = STYLE_MAP[level];
 
   return (
-    <Box borderStyle="single" borderColor={style.color} paddingX={1} width={fullWidth ? '100%' : undefined}>
-      <Text color={style.color} bold>
-        {style.label}
-      </Text>
-      <Text color="gray"> | </Text>
+    <Box borderStyle="doubleSingle" borderColor={style.border} paddingX={1} width={fullWidth ? '100%' : undefined}>
+      <Text color={style.border} bold>{style.tag}</Text>
+      <Text color="gray"> :: </Text>
       <Text wrap="truncate-end">{message}</Text>
     </Box>
   );

@@ -89,6 +89,7 @@ const Dashboard: React.FC = () => {
   } = useConfig();
   const configPath = configService.getConfigPath();
   const runningServers = servers.filter(server => server.status === 'running').length;
+  const stoppedServers = Math.max(0, servers.length - runningServers);
   const selectedLogs = useServerLogs(selectedServer?.config.path, 1500);
   const terminalWidth = stdout?.columns ?? 120;
   const isNarrow = terminalWidth < 110;
@@ -330,7 +331,7 @@ const Dashboard: React.FC = () => {
 
     if (key.return) {
       refresh();
-      showMessage('Refreshing dashboard...', 'info', 1500);
+      showMessage('Matrix sync requested', 'info', 1500);
       return;
     }
   });
@@ -518,19 +519,33 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box flexDirection="column" padding={1}>
-        <Header
-          title={APP_TITLE}
-          activeMode="Dashboard"
-          totalServers={servers.length}
-          runningServers={runningServers}
-          configPath={configPath}
-          compact={isCompact}
-          lastUpdated={lastUpdated}
-          isRefreshing={isLoading || isProcessing}
-        />
+      <Header
+        title={APP_TITLE}
+        activeMode="Dashboard"
+        totalServers={servers.length}
+        runningServers={runningServers}
+        configPath={configPath}
+        compact={isCompact}
+        lastUpdated={lastUpdated}
+        isRefreshing={isLoading || isProcessing}
+      />
+
+      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1}>
+        <Text>
+          <Text color="greenBright" bold>RUNNING {runningServers}</Text>
+          <Text color="gray">   </Text>
+          <Text color="redBright" bold>STOPPED {stoppedServers}</Text>
+          <Text color="gray">   </Text>
+          <Text color="yellowBright" bold>SELECTED {selectedServer?.name ?? 'none'}</Text>
+          <Text color="gray">   </Text>
+          <Text color={isProcessing ? 'yellowBright' : 'gray'}>
+            {isProcessing ? 'PIPELINE BUSY' : 'PIPELINE READY'}
+          </Text>
+        </Text>
+      </Box>
 
       <Box flexDirection={contentDirection} alignItems="flex-start" marginTop={1}>
-        <Box flexDirection="column" width={isCompact ? '100%' : '58%'}>
+        <Box flexDirection="column" width={isCompact ? '100%' : '64%'}>
           <ServerTable
             servers={servers}
             selectedIndex={selectedIndex}
@@ -539,11 +554,15 @@ const Dashboard: React.FC = () => {
             compact={isCompact}
             narrow={isNarrow}
           />
+
+          <Box marginTop={1}>
+            <MessageBar message={message?.text} level={message?.level} fullWidth />
+          </Box>
         </Box>
 
         <Box
           flexDirection="column"
-          width={isCompact ? '100%' : '42%'}
+          width={isCompact ? '100%' : '36%'}
           marginLeft={isCompact ? 0 : 1}
           marginTop={isCompact ? 1 : 0}
         >
@@ -552,16 +571,18 @@ const Dashboard: React.FC = () => {
             isProcessing={isProcessing}
             compact={isNarrow}
           />
+
+          <ActionBar showEditKey compact />
         </Box>
       </Box>
 
       <Box flexDirection={contentDirection} alignItems="flex-start" marginTop={1}>
-        <Box flexDirection="column" width={isCompact ? '100%' : '58%'}>
-          <Box borderStyle="single" borderColor="blueBright" paddingX={1} flexDirection="column">
-            <Text bold color="blueBright">Event Stream</Text>
+        <Box flexDirection="column" width={isCompact ? '100%' : '52%'}>
+          <Box borderStyle="doubleSingle" borderColor="blueBright" paddingX={1} flexDirection="column">
+            <Text bold color="blueBright">EVENT STREAM</Text>
             <Box marginTop={1} flexDirection="column">
               {events.length === 0 ? (
-                <Text color="gray">No events yet. Trigger an action to populate this stream.</Text>
+                <Text color="gray">NO EVENTS YET</Text>
               ) : (
                 events.map((event, index) => {
                   const levelColor = event.level === 'success'
@@ -570,16 +591,17 @@ const Dashboard: React.FC = () => {
                       ? 'redBright'
                       : 'blueBright';
                   const levelLabel = event.level === 'success'
-                    ? 'SUCCESS'
+                    ? 'OK'
                     : event.level === 'error'
-                      ? 'ALERT'
+                      ? 'FAIL'
                       : 'INFO';
 
                   return (
                     <Text key={`${event.timestamp}-${index}`} wrap="truncate-end">
+                      <Text color="gray">{index + 1}. </Text>
                       <Text color="gray">[{event.timestamp}] </Text>
                       <Text color={levelColor}>{levelLabel}</Text>
-                      <Text color="gray"> | </Text>
+                      <Text color="gray">{' -> '}</Text>
                       <Text>{event.text}</Text>
                     </Text>
                   );
@@ -591,21 +613,23 @@ const Dashboard: React.FC = () => {
 
         <Box
           flexDirection="column"
-          width={isCompact ? '100%' : '42%'}
+          width={isCompact ? '100%' : '48%'}
           marginLeft={isCompact ? 0 : 1}
           marginTop={isCompact ? 1 : 0}
         >
-          <Box borderStyle="single" borderColor="yellowBright" paddingX={1} flexDirection="column">
-            <Text bold color="yellowBright">Live Log Tail</Text>
+          <Box borderStyle="doubleSingle" borderColor="yellowBright" paddingX={1} flexDirection="column">
+            <Text bold color="yellowBright">LIVE LOG TAIL</Text>
             <Box marginTop={1} flexDirection="column">
               {!selectedServer ? (
-                <Text color="gray">Select an instance to read latest logs.</Text>
+                <Text color="gray">SELECT AN INSTANCE TO READ LOGS</Text>
               ) : selectedLogs.length === 0 ? (
-                <Text color="gray">No recent log lines available for {selectedServer.name}.</Text>
+                <Text color="gray">NO RECENT LOGS FOR {selectedServer.name.toUpperCase()}</Text>
               ) : (
-                selectedLogs.slice(-6).map((line, index) => (
+                selectedLogs.slice(-8).map((line, index) => (
                   <Text key={`${selectedServer.name}-${index}`} color="gray" wrap="truncate-end">
-                    {line}
+                    <Text color="yellow">{String(index + 1).padStart(2, '0')}</Text>
+                    <Text color="gray"> | </Text>
+                    <Text>{line}</Text>
                   </Text>
                 ))
               )}
@@ -613,12 +637,6 @@ const Dashboard: React.FC = () => {
           </Box>
         </Box>
       </Box>
-
-      <Box marginTop={1}>
-        <MessageBar message={message?.text} level={message?.level} fullWidth />
-      </Box>
-
-      <ActionBar showEditKey compact={isCompact} />
     </Box>
   );
 };

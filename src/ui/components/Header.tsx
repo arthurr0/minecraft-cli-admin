@@ -12,6 +12,16 @@ interface HeaderProps {
   isRefreshing?: boolean;
 }
 
+function meter(running: number, total: number, width: number): string {
+  if (total <= 0) {
+    return '░'.repeat(width);
+  }
+
+  const ratio = Math.max(0, Math.min(1, running / total));
+  const fill = Math.round(ratio * width);
+  return `${'▓'.repeat(fill)}${'░'.repeat(width - fill)}`;
+}
+
 export const Header: React.FC<HeaderProps> = ({
   title,
   activeMode,
@@ -22,30 +32,35 @@ export const Header: React.FC<HeaderProps> = ({
   lastUpdated,
   isRefreshing = false,
 }) => {
-  const barWidth = compact ? 14 : 22;
-  const ratio = totalServers === 0 ? 0 : runningServers / totalServers;
-  const filled = Math.max(0, Math.min(barWidth, Math.round(ratio * barWidth)));
-  const healthBar = `${'█'.repeat(filled)}${'░'.repeat(barWidth - filled)}`;
+  const health = meter(runningServers, totalServers, compact ? 10 : 16);
+  const percent = totalServers === 0 ? 0 : Math.round((runningServers / totalServers) * 100);
 
   return (
-    <Box flexDirection="column" borderStyle="double" borderColor="greenBright" paddingX={1}>
-      <Box flexDirection={compact ? 'column' : 'row'} justifyContent="space-between" gap={compact ? 0 : 2}>
-        <Text bold color="greenBright">{title}</Text>
+    <Box flexDirection="column" borderStyle="doubleSingle" borderColor="greenBright" paddingX={1}>
+      <Box justifyContent="space-between">
+        <Text>
+          <Text color="greenBright" bold>[MINT DATA STUDIO]</Text>
+          <Text color="gray">  </Text>
+          <Text bold color="whiteBright">{title}</Text>
+        </Text>
         <Text color={isRefreshing ? 'yellowBright' : 'gray'}>
-          {isRefreshing ? 'Live sync in progress' : `Updated ${lastUpdated ?? '--:--:--'}`}
+          {isRefreshing ? 'LIVE SYNC' : `UPDATED ${lastUpdated ?? '--:--:--'}`}
         </Text>
       </Box>
-      <Box flexDirection={compact ? 'column' : 'row'} justifyContent="space-between" gap={compact ? 0 : 2}>
-        <Text color="white">
-          Mode <Text color="yellowBright" bold>{activeMode}</Text>
-          {'  '}
-          Fleet <Text color="greenBright" bold>{runningServers}</Text>/<Text>{totalServers}</Text>
-          {'  '}
-          <Text color="greenBright">{healthBar}</Text>
+
+      <Box justifyContent="space-between" flexDirection={compact ? 'column' : 'row'}>
+        <Text>
+          <Text color="yellowBright">MODE</Text>
+          <Text> {activeMode}</Text>
+          <Text color="gray"> | </Text>
+          <Text color="greenBright">FLEET</Text>
+          <Text> {runningServers}/{totalServers}</Text>
+          <Text color="gray"> | </Text>
+          <Text color={percent >= 75 ? 'greenBright' : percent >= 40 ? 'yellowBright' : 'redBright'}>
+            HEALTH {health} {percent}%
+          </Text>
         </Text>
-        <Text color="gray" wrap="truncate-end">
-          Registry {configPath}
-        </Text>
+        <Text color="gray" wrap="truncate-end">CONFIG {configPath}</Text>
       </Box>
     </Box>
   );

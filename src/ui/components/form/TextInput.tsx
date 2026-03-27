@@ -103,16 +103,16 @@ export const TextInput: React.FC<TextInputProps> = ({
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color={focused ? 'greenBright' : 'white'} bold={focused}>
+        <Text color={focused ? 'yellowBright' : 'gray'} bold={focused}>
           {label}:{' '}
         </Text>
-        <Box borderStyle={focused ? 'single' : undefined} borderColor={error ? 'redBright' : focused ? 'greenBright' : 'gray'} paddingX={error ? 0 : undefined}>
+        <Box borderStyle={focused ? 'doubleSingle' : 'single'} borderColor={error ? 'redBright' : focused ? 'cyan' : 'gray'} paddingX={1}>
           {renderValue()}
         </Box>
       </Box>
       {error && (
         <Box marginLeft={label.length + 2}>
-          <Text color="red">{error}</Text>
+          <Text color="redBright">{error.toUpperCase()}</Text>
         </Box>
       )}
     </Box>

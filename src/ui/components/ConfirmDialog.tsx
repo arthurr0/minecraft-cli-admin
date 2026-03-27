@@ -13,8 +13,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   message,
   onConfirm,
   onCancel,
-  confirmLabel = 'Yes',
-  cancelLabel = 'No',
+  confirmLabel = 'CONFIRM',
+  cancelLabel = 'CANCEL',
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(1);
 
@@ -45,31 +45,22 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="singleDouble" borderColor="yellowBright" paddingX={1} paddingY={0}>
-        <Text color="yellowBright" bold>Confirmation Gate</Text>
+      <Box borderStyle="doubleSingle" borderColor="yellowBright" paddingX={1}>
+        <Text color="yellowBright" bold>CONFIRMATION GATE</Text>
       </Box>
-      <Box marginTop={1}>
-        <Text>{message}</Text>
+
+      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1}>
+        <Text>{message.toUpperCase()}</Text>
       </Box>
+
       <Box marginTop={1} gap={2}>
-        <Box>
-          <Text
-            color={selectedIndex === 0 ? 'black' : 'white'}
-            bold={selectedIndex === 0}
-            inverse={selectedIndex === 0}
-          >
-            {' '}[Y] {confirmLabel}{' '}
-          </Text>
-        </Box>
-        <Box>
-          <Text
-            color={selectedIndex === 1 ? 'black' : 'white'}
-            bold={selectedIndex === 1}
-            inverse={selectedIndex === 1}
-          >
-            {' '}[N] {cancelLabel}{' '}
-          </Text>
-        </Box>
+        <Text color={selectedIndex === 0 ? 'black' : 'greenBright'} inverse={selectedIndex === 0} bold>
+          {' '}[Y] {confirmLabel}{' '}
+        </Text>
+
+        <Text color={selectedIndex === 1 ? 'black' : 'redBright'} inverse={selectedIndex === 1} bold>
+          {' '}[N] {cancelLabel}{' '}
+        </Text>
       </Box>
     </Box>
   );

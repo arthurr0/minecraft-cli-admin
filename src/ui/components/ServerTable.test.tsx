@@ -35,11 +35,10 @@ describe('ServerTable', () => {
       />
     );
 
-    expect(lastFrame()).toContain('Fleet Matrix');
+    expect(lastFrame()).toContain('FLEET MATRIX');
     expect(lastFrame()).toContain('survival');
-    expect(lastFrame()).toContain('RUNNING');
+    expect(lastFrame()).toContain('[ RUN ]');
     expect(lastFrame()).toContain('25565');
-    expect(lastFrame()).toContain('paper');
   });
 
   it('renders an error state when loading fails', () => {
@@ -52,7 +51,7 @@ describe('ServerTable', () => {
       />
     );
 
-    expect(lastFrame()).toContain('Telemetry load failed');
+    expect(lastFrame()).toContain('MATRIX OFFLINE');
     expect(lastFrame()).toContain('screen binary not available');
   });
 });

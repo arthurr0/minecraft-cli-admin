@@ -46,34 +46,30 @@ export const Menu: React.FC<MenuProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="singleDouble" borderColor="greenBright" paddingX={1}>
-        <Text color="greenBright" bold>{title}</Text>
+      <Box borderStyle="doubleSingle" borderColor="greenBright" paddingX={1}>
+        <Text color="greenBright" bold>{title.toUpperCase()}</Text>
       </Box>
-      <Box flexDirection="column" marginTop={1}>
-        {items.map((item, index) => (
-          <Box key={item.value} flexDirection="column">
-            <Box>
-              <Text
-                color={index === selectedIndex ? 'black' : 'white'}
-                bold={index === selectedIndex}
-                inverse={index === selectedIndex}
-              >
-                {index === selectedIndex ? '> ' : '  '}
+
+      <Box flexDirection="column" marginTop={1} borderStyle="single" borderColor="gray" paddingX={1}>
+        {items.map((item, index) => {
+          const selected = index === selectedIndex;
+          return (
+            <Box key={item.value} flexDirection="column" marginBottom={item.description && selected ? 1 : 0}>
+              <Text color={selected ? 'black' : 'white'} inverse={selected} bold={selected}>
+                {selected ? '▶ ' : '  '}
                 {item.label}
               </Text>
+
+              {item.description && selected && (
+                <Text color="gray">   {item.description}</Text>
+              )}
             </Box>
-            {item.description && index === selectedIndex && (
-              <Box marginLeft={4}>
-                <Text color="gray">{item.description}</Text>
-              </Box>
-            )}
-          </Box>
-        ))}
+          );
+        })}
       </Box>
-      <Box marginTop={1} borderStyle="single" borderColor="yellowBright" paddingX={1}>
-        <Text color="gray">
-          {onBack ? '[Enter] Select  [Esc] Back' : '[Enter] Select'}
-        </Text>
+
+      <Box marginTop={1} borderStyle="doubleSingle" borderColor="yellowBright" paddingX={1}>
+        <Text color="gray">{onBack ? '<ENTER> SELECT   <ESC> BACK' : '<ENTER> SELECT'}</Text>
       </Box>
     </Box>
   );

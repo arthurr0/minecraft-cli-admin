@@ -6,48 +6,33 @@ interface ActionBarProps {
   compact?: boolean;
 }
 
+function keycap(key: string, label: string, color: string) {
+  return (
+    <Text>
+      <Text color={color} bold>{`<${key}>`}</Text>
+      <Text color="gray"> {label}</Text>
+    </Text>
+  );
+}
+
 export const ActionBar: React.FC<ActionBarProps> = ({ showEditKey, compact = false }) => {
   return (
     <Box flexDirection="column" marginTop={1}>
-      <Box borderStyle="single" borderColor="cyan" paddingX={1} flexDirection="column">
-        <Text color="cyan" bold>Command Deck</Text>
-        <Box gap={2} flexDirection={compact ? 'column' : 'row'}>
-          <Text>
-            <Text color="greenBright" bold>[S]</Text>
-            <Text> Start</Text>
-          </Text>
-          <Text>
-            <Text color="redBright" bold>[X]</Text>
-            <Text> Stop</Text>
-          </Text>
-          <Text>
-            <Text color="yellowBright" bold>[R]</Text>
-            <Text> Restart</Text>
-          </Text>
-          <Text>
-            <Text color="blueBright" bold>[B]</Text>
-            <Text> Backup</Text>
-          </Text>
-          <Text>
-            <Text color="whiteBright" bold>[C]</Text>
-            <Text> Console</Text>
-          </Text>
+      <Box borderStyle="doubleSingle" borderColor="blueBright" paddingX={1} flexDirection="column">
+        <Text color="blueBright" bold>COMMAND DECK</Text>
+
+        <Box marginTop={1} flexDirection={compact ? 'column' : 'row'} gap={2}>
+          {keycap('S', 'start', 'greenBright')}
+          {keycap('X', 'stop', 'redBright')}
+          {keycap('R', 'restart', 'yellowBright')}
+          {keycap('B', 'backup', 'cyan')}
+          {keycap('C', 'console', 'whiteBright')}
         </Box>
-        <Box gap={2} flexDirection={compact ? 'column' : 'row'}>
-          <Text>
-            <Text color="yellowBright" bold>[Enter]</Text>
-            <Text> Sync</Text>
-          </Text>
-          {showEditKey && (
-            <Text>
-              <Text color="magentaBright" bold>[E]</Text>
-              <Text> Studio Config</Text>
-            </Text>
-          )}
-          <Text>
-            <Text color="red" bold>[Q]</Text>
-            <Text> Exit</Text>
-          </Text>
+
+        <Box marginTop={compact ? 0 : 1} flexDirection={compact ? 'column' : 'row'} gap={2}>
+          {keycap('ENTER', 'refresh', 'yellowBright')}
+          {showEditKey ? keycap('E', 'config', 'magentaBright') : <Text color="gray"> </Text>}
+          {keycap('Q', 'quit', 'red')}
         </Box>
       </Box>
     </Box>

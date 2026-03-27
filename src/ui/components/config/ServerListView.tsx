@@ -17,7 +17,7 @@ export const ServerListView: React.FC<ServerListViewProps> = ({
   onDelete,
   onBack,
 }) => {
-  const serverNames = Object.keys(servers);
+  const names = Object.keys(servers);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useInput((input, key) => {
@@ -27,13 +27,13 @@ export const ServerListView: React.FC<ServerListViewProps> = ({
     }
 
     if (key.downArrow) {
-      setSelectedIndex(i => Math.min(serverNames.length - 1, i + 1));
+      setSelectedIndex(i => Math.min(names.length - 1, i + 1));
       return;
     }
 
     if (key.return || input === 'e') {
-      if (serverNames.length > 0) {
-        onEdit(serverNames[selectedIndex]);
+      if (names.length > 0) {
+        onEdit(names[selectedIndex]);
       }
       return;
     }
@@ -44,8 +44,8 @@ export const ServerListView: React.FC<ServerListViewProps> = ({
     }
 
     if (input === 'd') {
-      if (serverNames.length > 0) {
-        onDelete(serverNames[selectedIndex]);
+      if (names.length > 0) {
+        onDelete(names[selectedIndex]);
       }
       return;
     }
@@ -58,44 +58,39 @@ export const ServerListView: React.FC<ServerListViewProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="singleDouble" borderColor="greenBright" paddingX={1}>
-        <Text color="greenBright" bold>Instance Registry</Text>
+      <Box borderStyle="doubleSingle" borderColor="greenBright" paddingX={1}>
+        <Text color="greenBright" bold>INSTANCE REGISTRY</Text>
       </Box>
 
-      <Box flexDirection="column" marginTop={1}>
-        <Box marginBottom={1}>
-          <Text color="gray" bold>
-            {'  INSTANCE'.padEnd(22)}{'PROFILE'.padEnd(20)}{'PATH'.padEnd(32)}PORT
-          </Text>
-        </Box>
+      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
+        <Text color="gray" bold>
+          {'  INSTANCE'.padEnd(24)}
+          {'PROFILE'.padEnd(20)}
+          PORT
+        </Text>
 
-        {serverNames.length === 0 ? (
-          <Box>
-            <Text color="gray" italic>  No instances configured</Text>
-          </Box>
+        <Text color="gray">{'─'.repeat(58)}</Text>
+
+        {names.length === 0 ? (
+          <Text color="gray">NO INSTANCES CONFIGURED</Text>
         ) : (
-          serverNames.map((name, index) => {
-            const server = servers[name];
-            const isSelected = index === selectedIndex;
+          names.map((name, index) => {
+            const instance = servers[name];
+            const selected = selectedIndex === index;
             return (
-              <Box key={name}>
-                <Text color={isSelected ? 'black' : 'white'} bold={isSelected} inverse={isSelected}>
-                  {isSelected ? '> ' : '  '}
-                  {name.padEnd(20)}
-                  {server.type.padEnd(20)}
-                  {(server.path.length > 30 ? server.path.slice(0, 27) + '...' : server.path).padEnd(32)}
-                  {server.port || '-'}
-                </Text>
-              </Box>
+              <Text key={name} color={selected ? 'black' : 'white'} inverse={selected} bold={selected}>
+                {selected ? '▶ ' : '  '}
+                {name.padEnd(22)}
+                {instance.type.padEnd(20)}
+                {instance.port || '-'}
+              </Text>
             );
           })
         )}
       </Box>
 
-      <Box marginTop={1} borderStyle="single" borderColor="yellowBright" paddingX={1}>
-        <Text color="gray">
-          [A] Add  [E]/[Enter] Edit  [D] Delete  [Esc] Back
-        </Text>
+      <Box marginTop={1} borderStyle="doubleSingle" borderColor="yellowBright" paddingX={1}>
+        <Text color="gray">[A] ADD  [E]/[ENTER] EDIT  [D] DELETE  [ESC] BACK</Text>
       </Box>
     </Box>
   );

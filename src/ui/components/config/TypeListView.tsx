@@ -17,7 +17,7 @@ export const TypeListView: React.FC<TypeListViewProps> = ({
   onDelete,
   onBack,
 }) => {
-  const typeNames = Object.keys(types);
+  const names = Object.keys(types);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useInput((input, key) => {
@@ -27,13 +27,13 @@ export const TypeListView: React.FC<TypeListViewProps> = ({
     }
 
     if (key.downArrow) {
-      setSelectedIndex(i => Math.min(typeNames.length - 1, i + 1));
+      setSelectedIndex(i => Math.min(names.length - 1, i + 1));
       return;
     }
 
     if (key.return || input === 'e') {
-      if (typeNames.length > 0) {
-        onEdit(typeNames[selectedIndex]);
+      if (names.length > 0) {
+        onEdit(names[selectedIndex]);
       }
       return;
     }
@@ -44,8 +44,8 @@ export const TypeListView: React.FC<TypeListViewProps> = ({
     }
 
     if (input === 'd') {
-      if (typeNames.length > 0) {
-        onDelete(typeNames[selectedIndex]);
+      if (names.length > 0) {
+        onDelete(names[selectedIndex]);
       }
       return;
     }
@@ -58,44 +58,41 @@ export const TypeListView: React.FC<TypeListViewProps> = ({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="singleDouble" borderColor="greenBright" paddingX={1}>
-        <Text color="greenBright" bold>Profile Library</Text>
+      <Box borderStyle="doubleSingle" borderColor="greenBright" paddingX={1}>
+        <Text color="greenBright" bold>PROFILE LIBRARY</Text>
       </Box>
 
-      <Box flexDirection="column" marginTop={1}>
-        <Box marginBottom={1}>
-          <Text color="gray" bold>
-            {'  PROFILE'.padEnd(25)}{'MEMORY'.padEnd(12)}{'MIN'.padEnd(12)}FLAGS
-          </Text>
-        </Box>
+      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
+        <Text color="gray" bold>
+          {'  PROFILE'.padEnd(24)}
+          {'MEM'.padEnd(12)}
+          {'MIN'.padEnd(12)}
+          FLAGS
+        </Text>
 
-        {typeNames.length === 0 ? (
-          <Box>
-            <Text color="gray" italic>  No profiles configured</Text>
-          </Box>
+        <Text color="gray">{'─'.repeat(58)}</Text>
+
+        {names.length === 0 ? (
+          <Text color="gray">NO PROFILES CONFIGURED</Text>
         ) : (
-          typeNames.map((name, index) => {
+          names.map((name, index) => {
             const type = types[name];
-            const isSelected = index === selectedIndex;
+            const selected = selectedIndex === index;
             return (
-              <Box key={name}>
-                <Text color={isSelected ? 'black' : 'white'} bold={isSelected} inverse={isSelected}>
-                  {isSelected ? '> ' : '  '}
-                  {name.padEnd(23)}
-                  {type.memory.padEnd(12)}
-                  {type.min_memory.padEnd(12)}
-                  {type.jvm_flags.length} flags
-                </Text>
-              </Box>
+              <Text key={name} color={selected ? 'black' : 'white'} inverse={selected} bold={selected}>
+                {selected ? '▶ ' : '  '}
+                {name.padEnd(22)}
+                {type.memory.padEnd(12)}
+                {type.min_memory.padEnd(12)}
+                {type.jvm_flags.length}
+              </Text>
             );
           })
         )}
       </Box>
 
-      <Box marginTop={1} borderStyle="single" borderColor="yellowBright" paddingX={1}>
-        <Text color="gray">
-          [A] Add  [E]/[Enter] Edit  [D] Delete  [Esc] Back
-        </Text>
+      <Box marginTop={1} borderStyle="doubleSingle" borderColor="yellowBright" paddingX={1}>
+        <Text color="gray">[A] ADD  [E]/[ENTER] EDIT  [D] DELETE  [ESC] BACK</Text>
       </Box>
     </Box>
   );

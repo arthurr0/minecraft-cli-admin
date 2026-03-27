@@ -9,11 +9,11 @@ interface ServerDetailsPanelProps {
   compact?: boolean;
 }
 
-function DetailRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+function kv(label: string, value: string, color: string = 'white') {
   return (
     <Box justifyContent="space-between">
-      <Text color="gray">{label.padEnd(13)}</Text>
-      <Text color={valueColor}>{value}</Text>
+      <Text color="gray">{label.padEnd(12)}</Text>
+      <Text color={color}>{value}</Text>
     </Box>
   );
 }
@@ -25,10 +25,10 @@ export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
 }) => {
   if (!server) {
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1}>
-        <Text bold color="yellowBright">Instance Profile</Text>
+      <Box flexDirection="column" borderStyle="double" borderColor="cyan" paddingX={1}>
+        <Text color="cyan" bold>INSTANCE PROFILE</Text>
         <Box marginTop={1}>
-          <Text color="gray">No instance selected. Pick one in Fleet Matrix.</Text>
+          <Text color="gray">NO INSTANCE SELECTED</Text>
         </Box>
       </Box>
     );
@@ -39,72 +39,49 @@ export const ServerDetailsPanel: React.FC<ServerDetailsPanelProps> = ({
     server.status === 'starting' ? 'yellowBright' :
     server.status === 'stopping' ? 'yellow' :
     'redBright';
-  const isRunning = server.status === 'running';
-  const network = server.network;
-  const meterWidth = compact ? 8 : 12;
-  const memoryMeter = createMeter(server.memoryMB, 8192, meterWidth);
-  const cpuMeter = createMeter(server.cpuPercent, 100, meterWidth);
+
+  const cpuMeter = createMeter(server.cpuPercent, 100, compact ? 8 : 10);
+  const memMeter = createMeter(server.memoryMB, 8192, compact ? 8 : 10);
 
   return (
-    <Box flexDirection="column" borderStyle="singleDouble" borderColor="cyan" paddingX={1}>
-      <Text bold color="cyan">Instance Profile</Text>
-      <Box marginTop={1} flexDirection="column">
-        <DetailRow label="Name" value={server.name} valueColor="cyanBright" />
-        <DetailRow label="Status" value={server.status.toUpperCase()} valueColor={statusColor} />
-        <DetailRow label="Profile" value={server.config.type} />
-        <DetailRow label="Path" value={server.config.path.length > 30 ? `${server.config.path.slice(0, 27)}...` : server.config.path} />
-        <DetailRow
-          label="Port"
-          value={server.config.port ? String(server.config.port) : 'N/A'}
-          valueColor={server.portInUse ? 'greenBright' : undefined}
-        />
-        <DetailRow label="PID" value={server.pid ? String(server.pid) : '-'} />
-        <DetailRow label="Uptime" value={server.uptime || '-'} />
-        <DetailRow label="Memory" value={`${memoryMeter} ${server.memoryMB ? `${server.memoryMB}MB` : '-'}`} valueColor="green" />
-        <DetailRow label="CPU" value={`${cpuMeter} ${server.cpuPercent !== undefined ? `${server.cpuPercent}%` : '-'}`} valueColor="cyan" />
-        <DetailRow
-          label="Pipeline"
-          value={isProcessing ? 'Executing request...' : 'Ready'}
-          valueColor={isProcessing ? 'yellowBright' : 'greenBright'}
-        />
+    <Box flexDirection="column" borderStyle="double" borderColor="cyan" paddingX={1}>
+      <Box justifyContent="space-between">
+        <Text color="cyan" bold>INSTANCE PROFILE</Text>
+        <Text color={isProcessing ? 'yellowBright' : 'greenBright'}>
+          {isProcessing ? 'BUSY' : 'READY'}
+        </Text>
       </Box>
-      <Box marginTop={1}>
-        <Text color="gray">{'─'.repeat(compact ? 36 : 48)}</Text>
-      </Box>
-      <Box marginTop={1} flexDirection="column">
-        <Text bold color="yellowBright">Runtime Metrics</Text>
+
+      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
+        <Text color="yellowBright" bold>IDENTITY</Text>
         <Box marginTop={1} flexDirection="column">
-          <DetailRow
-            label="Total conn"
-            value={isRunning && network ? String(network.connections) : '-'}
-            valueColor="greenBright"
-          />
-          <DetailRow
-            label="TCP sockets"
-            value={isRunning && network ? String(network.tcpConnections) : '-'}
-          />
-          <DetailRow
-            label="UDP sockets"
-            value={isRunning && network ? String(network.udpSockets) : '-'}
-          />
-          <DetailRow
-            label="Listening"
-            value={isRunning && network ? String(network.listeningSockets) : '-'}
-          />
-          <DetailRow
-            label="Established"
-            value={isRunning && network ? String(network.establishedConnections) : '-'}
-          />
-          <DetailRow
-            label="Received"
-            value={isRunning && network?.rxBytes !== undefined ? `${Math.round(network.rxBytes / 1024)} KB` : '-'}
-            valueColor="cyan"
-          />
-          <DetailRow
-            label="Sent"
-            value={isRunning && network?.txBytes !== undefined ? `${Math.round(network.txBytes / 1024)} KB` : '-'}
-            valueColor="cyan"
-          />
+          {kv('name', server.name, 'whiteBright')}
+          {kv('status', server.status.toUpperCase(), statusColor)}
+          {kv('profile', server.config.type)}
+          {kv('port', server.config.port ? String(server.config.port) : '-', server.portInUse ? 'greenBright' : 'gray')}
+          {kv('pid', server.pid ? String(server.pid) : '-')}
+          {kv('uptime', server.uptime ?? '-')}
+        </Box>
+      </Box>
+
+      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
+        <Text color="greenBright" bold>RESOURCES</Text>
+        <Box marginTop={1} flexDirection="column">
+          {kv('memory', `${memMeter} ${server.memoryMB === undefined ? '---' : `${server.memoryMB}MB`}`, 'green')}
+          {kv('cpu', `${cpuMeter} ${server.cpuPercent === undefined ? '--%' : `${server.cpuPercent}%`}`, 'cyan')}
+        </Box>
+      </Box>
+
+      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
+        <Text color="blueBright" bold>NETWORK</Text>
+        <Box marginTop={1} flexDirection="column">
+          {kv('connections', server.network ? String(server.network.connections) : '-')}
+          {kv('tcp', server.network ? String(server.network.tcpConnections) : '-')}
+          {kv('udp', server.network ? String(server.network.udpSockets) : '-')}
+          {kv('listen', server.network ? String(server.network.listeningSockets) : '-')}
+          {kv('established', server.network ? String(server.network.establishedConnections) : '-')}
+          {kv('rx', server.network?.rxBytes !== undefined ? `${Math.round(server.network.rxBytes / 1024)}KB` : '-')}
+          {kv('tx', server.network?.txBytes !== undefined ? `${Math.round(server.network.txBytes / 1024)}KB` : '-')}
         </Box>
       </Box>
     </Box>
