@@ -1,79 +1,47 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { render, Box, Text, useApp, useInput, useStdout } from 'ink';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { Box, Text, render, useApp, useInput, useStdout } from 'ink';
 import { spawn } from 'child_process';
-import { Header } from './components/Header.js';
-import { ServerTable } from './components/ServerTable.js';
-import { ActionBar } from './components/ActionBar.js';
-import { ConfirmDialog } from './components/ConfirmDialog.js';
-import { MessageBar, ServerDetailsPanel } from './components/index.js';
-import {
-  ConfigMenu,
-  ServerListView,
-  TypeListView,
-  ServerForm,
-  ServerTypeForm,
-} from './components/config/index.js';
-import { useServers } from './hooks/useServers.js';
+import type { ServerConfig, ServerTypeConfig } from '../types/config.js';
+import { backupService, screenService, serverService } from '../services/index.js';
+import { configService } from '../services/config.service.js';
+import { validateMemoryFormat, validatePath, validatePort, validateServerName, validateServerTypeName } from '../utils/validator.js';
 import { useConfig } from './hooks/useConfig.js';
 import { useServerLogs } from './hooks/useServerLogs.js';
-import { serverService, backupService, screenService } from '../services/index.js';
-import { configService } from '../services/config.service.js';
+import { useServers } from './hooks/useServers.js';
+import { appReducer, initialState, type Screen } from './core/state.js';
+import type { EventRecord, NoticeLevel, ServerEditorModel, TypeEditorModel } from './core/types.js';
+import {
+  ConfigHomeScreen,
+  ConfigServersScreen,
+  ConfigTypesScreen,
+  ConfirmDeleteScreen,
+  OverviewScreen,
+  ServerEditorScreen,
+  TypeEditorScreen,
+} from './screens/index.js';
 
-type AppMode =
-  | 'dashboard'
-  | 'config-menu'
-  | 'server-list'
-  | 'server-form'
-  | 'type-list'
-  | 'type-form'
-  | 'confirm-delete';
+const EVENT_LIMIT = 8;
 
-interface EditingState {
-  name?: string;
-  isNew: boolean;
+function timestamp(): string {
+  return new Date().toLocaleTimeString('en-GB', { hour12: false });
 }
 
-interface ConfirmState {
-  message: string;
-  itemName: string;
-  itemType: 'server' | 'type';
+function firstServerName(names: string[], fallback = 0): number {
+  if (names.length === 0) {
+    return 0;
+  }
+
+  return Math.min(Math.max(0, fallback), names.length - 1);
 }
 
-type MessageState = {
-  level: 'info' | 'success' | 'error';
-  text: string;
-};
-
-interface EventRecord {
-  timestamp: string;
-  level: MessageState['level'];
-  text: string;
-}
-
-const APP_TITLE = 'Minecraft Control Studio';
-const EVENT_LIMIT = 6;
-
-const Dashboard: React.FC = () => {
+const DashboardRoot: React.FC = () => {
   const { exit } = useApp();
   const { stdout } = useStdout();
-  const [selectedName, setSelectedName] = useState<string | undefined>();
-  const [message, setMessage] = useState<MessageState | undefined>();
-  const [events, setEvents] = useState<EventRecord[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const [mode, setMode] = useState<AppMode>('dashboard');
-  const [editing, setEditing] = useState<EditingState>({ isNew: false });
-  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
-  const messageTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const [state, dispatch] = useReducer(appReducer, initialState);
+  const [editorError, setEditorError] = useState<string | undefined>(undefined);
+  const clearMessageRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const { servers, refresh, isLoading, error, lastUpdated } = useServers(2000);
-  const selectedIndex = useMemo(() => {
-    if (!selectedName) {
-      return servers.length > 0 ? 0 : -1;
-    }
-    return servers.findIndex(server => server.name === selectedName);
-  }, [selectedName, servers]);
-  const selectedServer = selectedIndex >= 0 ? servers[selectedIndex] : servers[0];
   const {
     servers: configServers,
     serverTypes,
@@ -84,130 +52,151 @@ const Dashboard: React.FC = () => {
     addServerType,
     updateServerType,
     deleteServerType,
-    isLoading: isConfigLoading,
     error: configError,
   } = useConfig();
-  const configPath = configService.getConfigPath();
-  const runningServers = servers.filter(server => server.status === 'running').length;
-  const stoppedServers = Math.max(0, servers.length - runningServers);
-  const selectedLogs = useServerLogs(selectedServer?.config.path, 1500);
+
+  const selectedServer = useMemo(() => {
+    if (servers.length === 0) {
+      return undefined;
+    }
+
+    if (!state.selectedServerName) {
+      return servers[0];
+    }
+
+    return servers.find((server) => server.name === state.selectedServerName) ?? servers[0];
+  }, [servers, state.selectedServerName]);
+
+  const selectedLogs = useServerLogs(selectedServer?.config.path, 1200);
+  const runningServers = servers.filter((server) => server.status === 'running').length;
   const terminalWidth = stdout?.columns ?? 120;
-  const isNarrow = terminalWidth < 110;
-  const isCompact = terminalWidth < 150;
-  const contentDirection = isCompact ? 'column' : 'row';
+  const compact = terminalWidth < 122;
+
+  const configServerNames = useMemo(() => Object.keys(configServers), [configServers]);
+  const configTypeNames = useMemo(() => Object.keys(serverTypes), [serverTypes]);
 
   useEffect(() => {
     if (servers.length === 0) {
-      setSelectedName(undefined);
+      dispatch({ type: 'setSelectedServerName', name: undefined });
       return;
     }
 
-    if (!selectedName || !servers.some(server => server.name === selectedName)) {
-      setSelectedName(servers[0].name);
+    if (!state.selectedServerName || !servers.some((server) => server.name === state.selectedServerName)) {
+      dispatch({ type: 'setSelectedServerName', name: servers[0].name });
     }
-  }, [selectedName, servers]);
+  }, [servers, state.selectedServerName]);
 
   useEffect(() => {
     return () => {
-      if (messageTimeoutRef.current) {
-        clearTimeout(messageTimeoutRef.current);
+      if (clearMessageRef.current) {
+        clearTimeout(clearMessageRef.current);
       }
     };
   }, []);
 
-  const showMessage = useCallback((text: string, level: MessageState['level'] = 'info', duration = 4000) => {
-    if (messageTimeoutRef.current) {
-      clearTimeout(messageTimeoutRef.current);
+  const pushNotice = useCallback((text: string, level: NoticeLevel = 'info', timeout = 4000) => {
+    dispatch({ type: 'setNotice', notice: { text, level } });
+
+    const event: EventRecord = {
+      timestamp: timestamp(),
+      level,
+      text,
+    };
+
+    dispatch({ type: 'pushEvent', event, limit: EVENT_LIMIT });
+
+    if (clearMessageRef.current) {
+      clearTimeout(clearMessageRef.current);
     }
 
-    const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
-    setEvents(previous => [{ timestamp, level, text }, ...previous].slice(0, EVENT_LIMIT));
-
-    setMessage({ text, level });
-
-    if (duration > 0) {
-      messageTimeoutRef.current = setTimeout(() => {
-        setMessage(undefined);
-        messageTimeoutRef.current = undefined;
-      }, duration);
+    if (timeout > 0) {
+      clearMessageRef.current = setTimeout(() => {
+        dispatch({ type: 'setNotice', notice: undefined });
+        clearMessageRef.current = undefined;
+      }, timeout);
     }
   }, []);
 
-  const showActionResult = useCallback((result: { success: boolean; message: string }) => {
-    showMessage(result.message, result.success ? 'success' : 'error');
-  }, [showMessage]);
-
   useEffect(() => {
     if (configError) {
-      showMessage(configError, 'error', 6000);
+      pushNotice(configError, 'error', 6000);
     }
-  }, [configError, showMessage]);
+  }, [configError, pushNotice]);
 
-  const handleStart = useCallback(async () => {
-    if (!selectedServer || isProcessing) return;
-    setIsProcessing(true);
-    showMessage(`Starting ${selectedServer.name}...`);
+  const runServerAction = useCallback(async (
+    actionName: string,
+    action: () => Promise<{ success: boolean; message: string }>,
+  ) => {
+    if (!selectedServer || state.processing) {
+      return;
+    }
+
+    dispatch({ type: 'setProcessing', value: true });
+    pushNotice(`${actionName} ${selectedServer.name}...`, 'info', 2000);
 
     try {
-      const result = await serverService.start(selectedServer.name, false);
-      showActionResult(result);
+      const result = await action();
+      pushNotice(result.message, result.success ? 'success' : 'error');
       await refresh();
+    } catch (actionError) {
+      pushNotice(actionError instanceof Error ? actionError.message : 'Unexpected failure', 'error');
     } finally {
-      setIsProcessing(false);
+      dispatch({ type: 'setProcessing', value: false });
     }
-  }, [selectedServer, isProcessing, showMessage, showActionResult, refresh]);
+  }, [selectedServer, state.processing, pushNotice, refresh]);
 
-  const handleStop = useCallback(async () => {
-    if (!selectedServer || isProcessing) return;
-    setIsProcessing(true);
-    showMessage(`Stopping ${selectedServer.name}...`);
-
-    try {
-      const result = await serverService.stop(selectedServer.name);
-      showActionResult(result);
-      await refresh();
-    } finally {
-      setIsProcessing(false);
+  const startSelectedServer = useCallback(async () => {
+    if (!selectedServer) {
+      return;
     }
-  }, [selectedServer, isProcessing, showMessage, showActionResult, refresh]);
 
-  const handleRestart = useCallback(async () => {
-    if (!selectedServer || isProcessing) return;
-    setIsProcessing(true);
-    showMessage(`Restarting ${selectedServer.name}...`);
+    await runServerAction('Starting', () => serverService.start(selectedServer.name, false));
+  }, [runServerAction, selectedServer]);
 
-    try {
-      const result = await serverService.restart(selectedServer.name);
-      showActionResult(result);
-      await refresh();
-    } finally {
-      setIsProcessing(false);
+  const stopSelectedServer = useCallback(async () => {
+    if (!selectedServer) {
+      return;
     }
-  }, [selectedServer, isProcessing, showMessage, showActionResult, refresh]);
 
-  const handleBackup = useCallback(async () => {
-    if (!selectedServer || isProcessing) return;
-    setIsProcessing(true);
-    showMessage(`Creating backup for ${selectedServer.name}...`);
+    await runServerAction('Stopping', () => serverService.stop(selectedServer.name));
+  }, [runServerAction, selectedServer]);
+
+  const restartSelectedServer = useCallback(async () => {
+    if (!selectedServer) {
+      return;
+    }
+
+    await runServerAction('Restarting', () => serverService.restart(selectedServer.name));
+  }, [runServerAction, selectedServer]);
+
+  const backupSelectedServer = useCallback(async () => {
+    if (!selectedServer || state.processing) {
+      return;
+    }
+
+    dispatch({ type: 'setProcessing', value: true });
+    pushNotice(`Creating backup for ${selectedServer.name}...`, 'info', 2000);
 
     try {
       const result = await backupService.createBackup(selectedServer.name);
       if (result.success) {
-        showMessage(`Backup created: ${result.size}`, 'success');
+        pushNotice(`Backup created (${result.size ?? 'unknown size'})`, 'success');
       } else {
-        showMessage(`Backup failed: ${result.error}`, 'error');
+        pushNotice(result.error ?? 'Backup failed', 'error');
       }
     } finally {
-      setIsProcessing(false);
+      dispatch({ type: 'setProcessing', value: false });
     }
-  }, [selectedServer, isProcessing, showMessage]);
+  }, [selectedServer, state.processing, pushNotice]);
 
-  const handleConsole = useCallback(async () => {
-    if (!selectedServer || isProcessing) return;
+  const openConsole = useCallback(async () => {
+    if (!selectedServer || state.processing) {
+      return;
+    }
 
-    const isRunning = await screenService.exists(selectedServer.name);
-    if (!isRunning) {
-      showMessage(`Server ${selectedServer.name} is not running`, 'error');
+    const exists = await screenService.exists(selectedServer.name);
+    if (!exists) {
+      pushNotice(`Server ${selectedServer.name} is not running`, 'error');
       return;
     }
 
@@ -218,429 +207,742 @@ const Dashboard: React.FC = () => {
       console.log(`Attaching to ${selectedServer.name} console...`);
       console.log('Press Ctrl+A, D to detach\n');
 
-      const screen = spawn('screen', ['-x', selectedServer.name], {
-        stdio: 'inherit'
-      });
-
+      const screen = spawn('screen', ['-x', selectedServer.name], { stdio: 'inherit' });
       screen.on('close', () => {
         console.clear();
         renderDashboard();
       });
     }, 100);
-  }, [selectedServer, isProcessing, exit, showMessage]);
+  }, [selectedServer, state.processing, pushNotice, exit]);
 
-  const handleSaveServer = useCallback(async (name: string, config: Parameters<typeof addServer>[1]) => {
-    if (editing.isNew) {
-      await addServer(name, config);
-      showMessage(`Server '${name}' added`, 'success');
-    } else {
-      await updateServer(name, config);
-      showMessage(`Server '${name}' updated`, 'success');
+  const openConfigHome = useCallback(async () => {
+    await refreshConfig();
+    dispatch({ type: 'setScreen', screen: 'config-home' });
+  }, [refreshConfig]);
+
+  const openServerEditor = useCallback((isNew: boolean) => {
+    const selectedName = configServerNames[state.selectedConfigServer];
+    const selected = selectedName ? configServers[selectedName] : undefined;
+
+    const model: ServerEditorModel = {
+      isNew,
+      originalName: isNew ? undefined : selectedName,
+      name: isNew ? '' : (selectedName ?? ''),
+      type: selected?.type ?? configTypeNames[0] ?? '',
+      path: selected?.path ?? '',
+      port: selected?.port === undefined ? '' : String(selected.port),
+      focus: 0,
+    };
+
+    setEditorError(undefined);
+    dispatch({ type: 'openServerEditor', model });
+  }, [configServerNames, configServers, configTypeNames, state.selectedConfigServer]);
+
+  const openTypeEditor = useCallback((isNew: boolean) => {
+    const selectedName = configTypeNames[state.selectedConfigType];
+    const selected = selectedName ? serverTypes[selectedName] : undefined;
+
+    const model: TypeEditorModel = {
+      isNew,
+      originalName: isNew ? undefined : selectedName,
+      name: isNew ? '' : (selectedName ?? ''),
+      memory: selected?.memory ?? '2G',
+      minMemory: selected?.min_memory ?? '1G',
+      jvmFlags: selected?.jvm_flags.join(' | ') ?? '',
+      focus: 0,
+    };
+
+    setEditorError(undefined);
+    dispatch({ type: 'openTypeEditor', model });
+  }, [configTypeNames, serverTypes, state.selectedConfigType]);
+
+  const saveServerEditor = useCallback(async () => {
+    const model = state.serverEditor;
+    if (!model) {
+      return;
     }
-    await refresh();
-    setMode('server-list');
-  }, [editing.isNew, addServer, updateServer, refresh, showMessage]);
 
-  const handleSaveServerType = useCallback(async (name: string, config: Parameters<typeof addServerType>[1]) => {
-    if (editing.isNew) {
-      await addServerType(name, config);
-      showMessage(`Server type '${name}' added`, 'success');
-    } else {
-      await updateServerType(name, config);
-      showMessage(`Server type '${name}' updated`, 'success');
+    const name = model.name.trim();
+    const typeName = model.type.trim();
+    const pathValue = model.path.trim();
+    const portText = model.port.trim();
+
+    if (model.isNew) {
+      const nameValidation = validateServerName(name);
+      if (!nameValidation.valid) {
+        setEditorError(nameValidation.error);
+        return;
+      }
     }
-    setMode('type-list');
-  }, [editing.isNew, addServerType, updateServerType, showMessage]);
 
-  const handleConfirmDelete = useCallback(async () => {
-    if (!confirmState) return;
+    const pathValidation = validatePath(pathValue);
+    if (!pathValidation.valid) {
+      setEditorError(pathValidation.error);
+      return;
+    }
+
+    if (typeName === '') {
+      setEditorError('Server type cannot be empty');
+      return;
+    }
+
+    let port: number | undefined;
+    if (portText !== '') {
+      const parsedPort = Number(portText);
+      if (!Number.isInteger(parsedPort)) {
+        setEditorError('Port must be an integer');
+        return;
+      }
+
+      const portValidation = validatePort(parsedPort);
+      if (!portValidation.valid) {
+        setEditorError(portValidation.error);
+        return;
+      }
+
+      port = parsedPort;
+    }
+
+    const payload: ServerConfig = {
+      type: typeName,
+      path: pathValue,
+      port,
+    };
 
     try {
-      if (confirmState.itemType === 'server') {
-        await deleteServer(confirmState.itemName);
-        showMessage(`Server '${confirmState.itemName}' deleted`, 'success');
-        await refresh();
-        setMode('server-list');
-      } else {
-        await deleteServerType(confirmState.itemName);
-        showMessage(`Server type '${confirmState.itemName}' deleted`, 'success');
-        setMode('type-list');
+      if (model.isNew) {
+        await addServer(name, payload);
+        pushNotice(`Server '${name}' added`, 'success');
+      } else if (model.originalName) {
+        await updateServer(model.originalName, payload);
+        pushNotice(`Server '${model.originalName}' updated`, 'success');
       }
-    } catch (error) {
-      showMessage(error instanceof Error ? error.message : 'Delete failed', 'error');
-      setMode(confirmState.itemType === 'server' ? 'server-list' : 'type-list');
+
+      await refresh();
+      setEditorError(undefined);
+      dispatch({ type: 'clearServerEditor' });
+      dispatch({ type: 'setScreen', screen: 'config-servers' });
+    } catch (saveError) {
+      setEditorError(saveError instanceof Error ? saveError.message : 'Failed to save server');
     }
-    setConfirmState(null);
-  }, [confirmState, deleteServer, deleteServerType, refresh, showMessage]);
+  }, [state.serverEditor, addServer, updateServer, refresh, pushNotice]);
+
+  const saveTypeEditor = useCallback(async () => {
+    const model = state.typeEditor;
+    if (!model) {
+      return;
+    }
+
+    const name = model.name.trim();
+    const memory = model.memory.trim();
+    const minMemory = model.minMemory.trim();
+    const flags = model.jvmFlags
+      .split('|')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    if (model.isNew) {
+      const nameValidation = validateServerTypeName(name);
+      if (!nameValidation.valid) {
+        setEditorError(nameValidation.error);
+        return;
+      }
+    }
+
+    const memoryValidation = validateMemoryFormat(memory);
+    if (!memoryValidation.valid) {
+      setEditorError(memoryValidation.error);
+      return;
+    }
+
+    const minMemoryValidation = validateMemoryFormat(minMemory);
+    if (!minMemoryValidation.valid) {
+      setEditorError(minMemoryValidation.error);
+      return;
+    }
+
+    const payload: ServerTypeConfig = {
+      memory,
+      min_memory: minMemory,
+      jvm_flags: flags,
+    };
+
+    try {
+      if (model.isNew) {
+        await addServerType(name, payload);
+        pushNotice(`Server type '${name}' added`, 'success');
+      } else if (model.originalName) {
+        await updateServerType(model.originalName, payload);
+        pushNotice(`Server type '${model.originalName}' updated`, 'success');
+      }
+
+      setEditorError(undefined);
+      dispatch({ type: 'clearTypeEditor' });
+      dispatch({ type: 'setScreen', screen: 'config-types' });
+    } catch (saveError) {
+      setEditorError(saveError instanceof Error ? saveError.message : 'Failed to save server type');
+    }
+  }, [state.typeEditor, addServerType, updateServerType, pushNotice]);
+
+  const requestDeleteServer = useCallback(() => {
+    const name = configServerNames[state.selectedConfigServer];
+    if (!name) {
+      return;
+    }
+
+    dispatch({
+      type: 'setDeleteIntent',
+      intent: {
+        entity: 'server',
+        name,
+        message: `Delete server '${name}'? This cannot be undone.`,
+      },
+    });
+    dispatch({ type: 'setScreen', screen: 'confirm-delete' });
+  }, [configServerNames, state.selectedConfigServer]);
+
+  const requestDeleteType = useCallback(() => {
+    const name = configTypeNames[state.selectedConfigType];
+    if (!name) {
+      return;
+    }
+
+    dispatch({
+      type: 'setDeleteIntent',
+      intent: {
+        entity: 'type',
+        name,
+        message: `Delete server type '${name}'? This cannot be undone.`,
+      },
+    });
+    dispatch({ type: 'setScreen', screen: 'confirm-delete' });
+  }, [configTypeNames, state.selectedConfigType]);
+
+  const executeDelete = useCallback(async () => {
+    if (!state.deleteIntent) {
+      return;
+    }
+
+    try {
+      if (state.deleteIntent.entity === 'server') {
+        await deleteServer(state.deleteIntent.name);
+        pushNotice(`Server '${state.deleteIntent.name}' deleted`, 'success');
+        await refresh();
+        dispatch({ type: 'setScreen', screen: 'config-servers' });
+      } else {
+        await deleteServerType(state.deleteIntent.name);
+        pushNotice(`Server type '${state.deleteIntent.name}' deleted`, 'success');
+        dispatch({ type: 'setScreen', screen: 'config-types' });
+      }
+    } catch (deleteError) {
+      pushNotice(deleteError instanceof Error ? deleteError.message : 'Delete failed', 'error');
+      dispatch({ type: 'setScreen', screen: state.deleteIntent.entity === 'server' ? 'config-servers' : 'config-types' });
+    } finally {
+      dispatch({ type: 'setDeleteIntent', intent: undefined });
+    }
+  }, [state.deleteIntent, deleteServer, deleteServerType, refresh, pushNotice]);
+
+  const cancelDelete = useCallback(() => {
+    if (!state.deleteIntent) {
+      dispatch({ type: 'setScreen', screen: 'config-home' });
+      return;
+    }
+
+    dispatch({ type: 'setDeleteIntent', intent: undefined });
+    dispatch({ type: 'setScreen', screen: state.deleteIntent.entity === 'server' ? 'config-servers' : 'config-types' });
+  }, [state.deleteIntent]);
 
   useInput((input, key) => {
-    if (mode !== 'dashboard') return;
-    if (isProcessing) return;
+    const screen = state.screen;
 
-    if (input === 'q') {
-      exit();
-      return;
-    }
-
-    if (key.upArrow) {
-      const nextIndex = Math.max(0, selectedIndex - 1);
-      if (servers[nextIndex]) {
-        setSelectedName(servers[nextIndex].name);
+    if (screen === 'overview') {
+      if (state.processing) {
+        return;
       }
-      return;
-    }
 
-    if (key.downArrow) {
-      const nextIndex = Math.min(servers.length - 1, selectedIndex + 1);
-      if (servers[nextIndex]) {
-        setSelectedName(servers[nextIndex].name);
+      if (input === 'q') {
+        exit();
+        return;
       }
+
+      if (key.upArrow || key.downArrow) {
+        if (servers.length === 0) {
+          return;
+        }
+
+        const currentIndex = selectedServer ? servers.findIndex((server) => server.name === selectedServer.name) : 0;
+        const delta = key.upArrow ? -1 : 1;
+        const nextIndex = Math.max(0, Math.min(servers.length - 1, currentIndex + delta));
+        dispatch({ type: 'setSelectedServerName', name: servers[nextIndex]?.name });
+        return;
+      }
+
+      if (input === 's') {
+        void startSelectedServer();
+        return;
+      }
+
+      if (input === 'x') {
+        void stopSelectedServer();
+        return;
+      }
+
+      if (input === 'r') {
+        void restartSelectedServer();
+        return;
+      }
+
+      if (input === 'b') {
+        void backupSelectedServer();
+        return;
+      }
+
+      if (input === 'c') {
+        void openConsole();
+        return;
+      }
+
+      if (input === 'e') {
+        void openConfigHome();
+        return;
+      }
+
+      if (key.return) {
+        void refresh();
+        pushNotice('Status refresh requested', 'info', 1200);
+      }
+
       return;
     }
 
-    if (input === 's') {
-      handleStart();
+    if (screen === 'config-home') {
+      if (input === '1') {
+        dispatch({ type: 'setScreen', screen: 'config-servers' });
+        return;
+      }
+
+      if (input === '2') {
+        dispatch({ type: 'setScreen', screen: 'config-types' });
+        return;
+      }
+
+      if (key.escape) {
+        dispatch({ type: 'setScreen', screen: 'overview' });
+      }
+
       return;
     }
 
-    if (input === 'x') {
-      handleStop();
+    if (screen === 'config-servers') {
+      if (key.upArrow) {
+        dispatch({ type: 'setSelectedConfigServer', index: Math.max(0, state.selectedConfigServer - 1) });
+        return;
+      }
+
+      if (key.downArrow) {
+        dispatch({
+          type: 'setSelectedConfigServer',
+          index: Math.min(Math.max(0, configServerNames.length - 1), state.selectedConfigServer + 1),
+        });
+        return;
+      }
+
+      if (input === 'a') {
+        openServerEditor(true);
+        return;
+      }
+
+      if (input === 'e' || key.return) {
+        if (configServerNames.length > 0) {
+          openServerEditor(false);
+        }
+        return;
+      }
+
+      if (input === 'd') {
+        requestDeleteServer();
+        return;
+      }
+
+      if (key.escape) {
+        dispatch({ type: 'setScreen', screen: 'config-home' });
+      }
+
       return;
     }
 
-    if (input === 'r') {
-      handleRestart();
+    if (screen === 'config-types') {
+      if (key.upArrow) {
+        dispatch({ type: 'setSelectedConfigType', index: Math.max(0, state.selectedConfigType - 1) });
+        return;
+      }
+
+      if (key.downArrow) {
+        dispatch({
+          type: 'setSelectedConfigType',
+          index: Math.min(Math.max(0, configTypeNames.length - 1), state.selectedConfigType + 1),
+        });
+        return;
+      }
+
+      if (input === 'a') {
+        openTypeEditor(true);
+        return;
+      }
+
+      if (input === 'e' || key.return) {
+        if (configTypeNames.length > 0) {
+          openTypeEditor(false);
+        }
+        return;
+      }
+
+      if (input === 'd') {
+        requestDeleteType();
+        return;
+      }
+
+      if (key.escape) {
+        dispatch({ type: 'setScreen', screen: 'config-home' });
+      }
+
       return;
     }
 
-    if (input === 'b') {
-      handleBackup();
+    if (screen === 'config-server-editor' && state.serverEditor) {
+      const model = state.serverEditor;
+      const fieldCount = model.isNew ? 4 : 3;
+
+      if (key.escape) {
+        dispatch({ type: 'clearServerEditor' });
+        dispatch({ type: 'setScreen', screen: 'config-servers' });
+        setEditorError(undefined);
+        return;
+      }
+
+      if (key.ctrl && input === 's') {
+        void saveServerEditor();
+        return;
+      }
+
+      if (key.tab && !key.shift) {
+        dispatch({ type: 'updateServerEditor', patch: { focus: (model.focus + 1) % fieldCount } });
+        return;
+      }
+
+      if (key.tab && key.shift) {
+        dispatch({ type: 'updateServerEditor', patch: { focus: (model.focus - 1 + fieldCount) % fieldCount } });
+        return;
+      }
+
+      if (key.upArrow || key.downArrow) {
+        if (model.isNew && model.focus === 1) {
+          const current = configTypeNames.indexOf(model.type);
+          const fallbackIndex = current >= 0 ? current : 0;
+          const next = key.upArrow
+            ? Math.max(0, fallbackIndex - 1)
+            : Math.min(Math.max(0, configTypeNames.length - 1), fallbackIndex + 1);
+          const nextType = configTypeNames[next];
+          if (nextType) {
+            dispatch({ type: 'updateServerEditor', patch: { type: nextType } });
+          }
+          return;
+        }
+
+        if (!model.isNew && model.focus === 0) {
+          const current = configTypeNames.indexOf(model.type);
+          const fallbackIndex = current >= 0 ? current : 0;
+          const next = key.upArrow
+            ? Math.max(0, fallbackIndex - 1)
+            : Math.min(Math.max(0, configTypeNames.length - 1), fallbackIndex + 1);
+          const nextType = configTypeNames[next];
+          if (nextType) {
+            dispatch({ type: 'updateServerEditor', patch: { type: nextType } });
+          }
+          return;
+        }
+
+        return;
+      }
+
+      if (key.backspace || key.delete) {
+        if (model.isNew) {
+          if (model.focus === 0) {
+            dispatch({ type: 'updateServerEditor', patch: { name: model.name.slice(0, -1) } });
+            return;
+          }
+          if (model.focus === 2) {
+            dispatch({ type: 'updateServerEditor', patch: { path: model.path.slice(0, -1) } });
+            return;
+          }
+          if (model.focus === 3) {
+            dispatch({ type: 'updateServerEditor', patch: { port: model.port.slice(0, -1) } });
+            return;
+          }
+        } else {
+          if (model.focus === 1) {
+            dispatch({ type: 'updateServerEditor', patch: { path: model.path.slice(0, -1) } });
+            return;
+          }
+          if (model.focus === 2) {
+            dispatch({ type: 'updateServerEditor', patch: { port: model.port.slice(0, -1) } });
+            return;
+          }
+        }
+
+        return;
+      }
+
+      if (input.length === 1 && !key.ctrl && !key.meta && !key.escape && !key.tab) {
+        const text = input;
+
+        if (model.isNew) {
+          if (model.focus === 0) {
+            dispatch({ type: 'updateServerEditor', patch: { name: `${model.name}${text}` } });
+            return;
+          }
+          if (model.focus === 2) {
+            dispatch({ type: 'updateServerEditor', patch: { path: `${model.path}${text}` } });
+            return;
+          }
+          if (model.focus === 3) {
+            if (/^[0-9]$/.test(text)) {
+              dispatch({ type: 'updateServerEditor', patch: { port: `${model.port}${text}` } });
+            }
+            return;
+          }
+        } else {
+          if (model.focus === 1) {
+            dispatch({ type: 'updateServerEditor', patch: { path: `${model.path}${text}` } });
+            return;
+          }
+          if (model.focus === 2) {
+            if (/^[0-9]$/.test(text)) {
+              dispatch({ type: 'updateServerEditor', patch: { port: `${model.port}${text}` } });
+            }
+            return;
+          }
+        }
+      }
+
       return;
     }
 
-    if (input === 'c') {
-      handleConsole();
+    if (screen === 'config-type-editor' && state.typeEditor) {
+      const model = state.typeEditor;
+      const fieldCount = model.isNew ? 4 : 3;
+
+      if (key.escape) {
+        dispatch({ type: 'clearTypeEditor' });
+        dispatch({ type: 'setScreen', screen: 'config-types' });
+        setEditorError(undefined);
+        return;
+      }
+
+      if (key.ctrl && input === 's') {
+        void saveTypeEditor();
+        return;
+      }
+
+      if (key.tab && !key.shift) {
+        dispatch({ type: 'updateTypeEditor', patch: { focus: (model.focus + 1) % fieldCount } });
+        return;
+      }
+
+      if (key.tab && key.shift) {
+        dispatch({ type: 'updateTypeEditor', patch: { focus: (model.focus - 1 + fieldCount) % fieldCount } });
+        return;
+      }
+
+      if (key.backspace || key.delete) {
+        if (model.isNew) {
+          if (model.focus === 0) {
+            dispatch({ type: 'updateTypeEditor', patch: { name: model.name.slice(0, -1) } });
+            return;
+          }
+          if (model.focus === 1) {
+            dispatch({ type: 'updateTypeEditor', patch: { memory: model.memory.slice(0, -1) } });
+            return;
+          }
+          if (model.focus === 2) {
+            dispatch({ type: 'updateTypeEditor', patch: { minMemory: model.minMemory.slice(0, -1) } });
+            return;
+          }
+          if (model.focus === 3) {
+            dispatch({ type: 'updateTypeEditor', patch: { jvmFlags: model.jvmFlags.slice(0, -1) } });
+            return;
+          }
+        } else {
+          if (model.focus === 0) {
+            dispatch({ type: 'updateTypeEditor', patch: { memory: model.memory.slice(0, -1) } });
+            return;
+          }
+          if (model.focus === 1) {
+            dispatch({ type: 'updateTypeEditor', patch: { minMemory: model.minMemory.slice(0, -1) } });
+            return;
+          }
+          if (model.focus === 2) {
+            dispatch({ type: 'updateTypeEditor', patch: { jvmFlags: model.jvmFlags.slice(0, -1) } });
+            return;
+          }
+        }
+
+        return;
+      }
+
+      if (input.length === 1 && !key.ctrl && !key.meta && !key.escape && !key.tab) {
+        const text = input;
+
+        if (model.isNew) {
+          if (model.focus === 0) {
+            dispatch({ type: 'updateTypeEditor', patch: { name: `${model.name}${text}` } });
+            return;
+          }
+          if (model.focus === 1) {
+            dispatch({ type: 'updateTypeEditor', patch: { memory: `${model.memory}${text}` } });
+            return;
+          }
+          if (model.focus === 2) {
+            dispatch({ type: 'updateTypeEditor', patch: { minMemory: `${model.minMemory}${text}` } });
+            return;
+          }
+          if (model.focus === 3) {
+            dispatch({ type: 'updateTypeEditor', patch: { jvmFlags: `${model.jvmFlags}${text}` } });
+            return;
+          }
+        } else {
+          if (model.focus === 0) {
+            dispatch({ type: 'updateTypeEditor', patch: { memory: `${model.memory}${text}` } });
+            return;
+          }
+          if (model.focus === 1) {
+            dispatch({ type: 'updateTypeEditor', patch: { minMemory: `${model.minMemory}${text}` } });
+            return;
+          }
+          if (model.focus === 2) {
+            dispatch({ type: 'updateTypeEditor', patch: { jvmFlags: `${model.jvmFlags}${text}` } });
+            return;
+          }
+        }
+      }
+
       return;
     }
 
-    if (input === 'e') {
-      refreshConfig();
-      setMode('config-menu');
-      return;
-    }
+    if (screen === 'confirm-delete') {
+      if (input.toLowerCase() === 'y') {
+        void executeDelete();
+        return;
+      }
 
-    if (key.return) {
-      refresh();
-      showMessage('Matrix sync requested', 'info', 1500);
-      return;
+      if (input.toLowerCase() === 'n' || key.escape) {
+        cancelDelete();
+      }
     }
   });
 
-  if (mode === 'confirm-delete' && confirmState) {
-    return (
-      <Box flexDirection="column" padding={1}>
-        <Header
-          title={APP_TITLE}
-          activeMode="Confirm Delete"
-          totalServers={servers.length}
-          runningServers={runningServers}
-          configPath={configPath}
-          compact={isCompact}
-          lastUpdated={lastUpdated}
-        />
-        <ConfirmDialog
-          message={confirmState.message}
-          onConfirm={handleConfirmDelete}
-          onCancel={() => {
-            setConfirmState(null);
-            setMode(confirmState.itemType === 'server' ? 'server-list' : 'type-list');
-          }}
-        />
-      </Box>
-    );
-  }
+  useEffect(() => {
+    if (state.screen === 'config-servers') {
+      const bounded = firstServerName(configServerNames, state.selectedConfigServer);
+      if (bounded !== state.selectedConfigServer) {
+        dispatch({ type: 'setSelectedConfigServer', index: bounded });
+      }
+    }
 
-  if (mode === 'config-menu') {
-    return (
-      <Box flexDirection="column" padding={1}>
-        <Header
-          title={APP_TITLE}
-          activeMode={isConfigLoading ? 'Config Loading' : 'Config Menu'}
-          totalServers={servers.length}
-          runningServers={runningServers}
-          configPath={configPath}
-          compact={isCompact}
-          lastUpdated={lastUpdated}
-          isRefreshing={isConfigLoading}
-        />
-        <ConfigMenu
-          serverCount={Object.keys(configServers).length}
-          typeCount={Object.keys(serverTypes).length}
-          onSelect={(section) => {
-            if (section === 'servers') {
-              setMode('server-list');
-            } else {
-              setMode('type-list');
-            }
-          }}
-          onBack={() => setMode('dashboard')}
-        />
-      </Box>
-    );
-  }
+    if (state.screen === 'config-types') {
+      const bounded = firstServerName(configTypeNames, state.selectedConfigType);
+      if (bounded !== state.selectedConfigType) {
+        dispatch({ type: 'setSelectedConfigType', index: bounded });
+      }
+    }
+  }, [configServerNames, configTypeNames, state.screen, state.selectedConfigServer, state.selectedConfigType]);
 
-  if (mode === 'server-list') {
-    return (
-      <Box flexDirection="column" padding={1}>
-        <Header
-          title={APP_TITLE}
-          activeMode="Server Registry"
-          totalServers={servers.length}
-          runningServers={runningServers}
-          configPath={configPath}
-          compact={isCompact}
-          lastUpdated={lastUpdated}
-          isRefreshing={isConfigLoading}
-        />
-        <ServerListView
-          servers={configServers}
-          onAdd={() => {
-            setEditing({ isNew: true });
-            setMode('server-form');
-          }}
-          onEdit={(name) => {
-            setEditing({ name, isNew: false });
-            setMode('server-form');
-          }}
-          onDelete={(name) => {
-            setConfirmState({
-              message: `Delete server '${name}'? This cannot be undone.`,
-              itemName: name,
-              itemType: 'server',
-            });
-            setMode('confirm-delete');
-          }}
-          onBack={() => setMode('config-menu')}
-        />
-        <Box marginTop={1}>
-          <MessageBar message={message?.text} level={message?.level} />
-        </Box>
-      </Box>
-    );
-  }
+  const configPath = configService.getConfigPath();
 
-  if (mode === 'server-form') {
-    const serverTypeNames = Object.keys(serverTypes);
-    return (
-      <Box flexDirection="column" padding={1}>
-        <Header
-          title={APP_TITLE}
-          activeMode={editing.isNew ? 'Create Instance' : 'Edit Instance'}
-          totalServers={servers.length}
-          runningServers={runningServers}
-          configPath={configPath}
-          compact={isCompact}
-          lastUpdated={lastUpdated}
-        />
-        <ServerForm
-          isNew={editing.isNew}
-          serverName={editing.name}
-          initialValues={editing.name ? configServers[editing.name] : undefined}
-          serverTypes={serverTypeNames}
-          onSave={handleSaveServer}
-          onCancel={() => setMode('server-list')}
-        />
-      </Box>
-    );
-  }
+  const screenTitle = useMemo(() => {
+    const titleMap: Record<Screen, string> = {
+      overview: 'Dashboard',
+      'config-home': 'Config Studio',
+      'config-servers': 'Server Registry',
+      'config-server-editor': 'Server Editor',
+      'config-types': 'Type Library',
+      'config-type-editor': 'Type Editor',
+      'confirm-delete': 'Confirm Delete',
+    };
 
-  if (mode === 'type-list') {
-    return (
-      <Box flexDirection="column" padding={1}>
-        <Header
-          title={APP_TITLE}
-          activeMode="Profile Registry"
-          totalServers={servers.length}
-          runningServers={runningServers}
-          configPath={configPath}
-          compact={isCompact}
-          lastUpdated={lastUpdated}
-          isRefreshing={isConfigLoading}
-        />
-        <TypeListView
-          types={serverTypes}
-          onAdd={() => {
-            setEditing({ isNew: true });
-            setMode('type-form');
-          }}
-          onEdit={(name) => {
-            setEditing({ name, isNew: false });
-            setMode('type-form');
-          }}
-          onDelete={(name) => {
-            setConfirmState({
-              message: `Delete server type '${name}'? This cannot be undone.`,
-              itemName: name,
-              itemType: 'type',
-            });
-            setMode('confirm-delete');
-          }}
-          onBack={() => setMode('config-menu')}
-        />
-        <Box marginTop={1}>
-          <MessageBar message={message?.text} level={message?.level} />
-        </Box>
-      </Box>
-    );
-  }
-
-  if (mode === 'type-form') {
-    return (
-      <Box flexDirection="column" padding={1}>
-        <Header
-          title={APP_TITLE}
-          activeMode={editing.isNew ? 'Create Profile' : 'Edit Profile'}
-          totalServers={servers.length}
-          runningServers={runningServers}
-          configPath={configPath}
-          compact={isCompact}
-          lastUpdated={lastUpdated}
-        />
-        <ServerTypeForm
-          isNew={editing.isNew}
-          typeName={editing.name}
-          initialValues={editing.name ? serverTypes[editing.name] : undefined}
-          onSave={handleSaveServerType}
-          onCancel={() => setMode('type-list')}
-        />
-      </Box>
-    );
-  }
+    return titleMap[state.screen];
+  }, [state.screen]);
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Header
-        title={APP_TITLE}
-        activeMode="Dashboard"
-        totalServers={servers.length}
-        runningServers={runningServers}
-        configPath={configPath}
-        compact={isCompact}
-        lastUpdated={lastUpdated}
-        isRefreshing={isLoading || isProcessing}
-      />
-
-      <Box marginTop={1} borderStyle="single" borderColor="gray" paddingX={1}>
+      <Box borderStyle="doubleSingle" borderColor="cyanBright" paddingX={1}>
         <Text>
-          <Text color="greenBright" bold>RUNNING {runningServers}</Text>
-          <Text color="gray">   </Text>
-          <Text color="redBright" bold>STOPPED {stoppedServers}</Text>
-          <Text color="gray">   </Text>
-          <Text color="yellowBright" bold>SELECTED {selectedServer?.name ?? 'none'}</Text>
-          <Text color="gray">   </Text>
-          <Text color={isProcessing ? 'yellowBright' : 'gray'}>
-            {isProcessing ? 'PIPELINE BUSY' : 'PIPELINE READY'}
-          </Text>
+          <Text color="cyanBright" bold>MC-CLI NEXT UI</Text>
+          <Text color="gray"> | </Text>
+          <Text color="whiteBright">{screenTitle}</Text>
+          <Text color="gray"> | </Text>
+          <Text color="gray" wrap="truncate-end">{configPath}</Text>
         </Text>
       </Box>
 
-      <Box flexDirection={contentDirection} alignItems="flex-start" marginTop={1}>
-        <Box flexDirection="column" width={isCompact ? '100%' : '64%'}>
-          <ServerTable
+      <Box marginTop={1}>
+        {state.screen === 'overview' ? (
+          <OverviewScreen
             servers={servers}
-            selectedIndex={selectedIndex}
+            selectedServer={selectedServer}
+            selectedServerName={selectedServer?.name}
+            events={state.events}
+            logs={selectedLogs}
+            notice={state.notice}
             isLoading={isLoading}
             error={error}
-            compact={isCompact}
-            narrow={isNarrow}
+            processing={state.processing}
+            runningServers={runningServers}
+            lastUpdated={lastUpdated}
+            compact={compact}
           />
+        ) : null}
 
-          <Box marginTop={1}>
-            <MessageBar message={message?.text} level={message?.level} fullWidth />
-          </Box>
-        </Box>
-
-        <Box
-          flexDirection="column"
-          width={isCompact ? '100%' : '36%'}
-          marginLeft={isCompact ? 0 : 1}
-          marginTop={isCompact ? 1 : 0}
-        >
-          <ServerDetailsPanel
-            server={selectedServer}
-            isProcessing={isProcessing}
-            compact={isNarrow}
+        {state.screen === 'config-home' ? (
+          <ConfigHomeScreen
+            serverCount={configServerNames.length}
+            typeCount={configTypeNames.length}
+            notice={state.notice}
           />
+        ) : null}
 
-          <ActionBar showEditKey compact />
-        </Box>
-      </Box>
+        {state.screen === 'config-servers' ? (
+          <ConfigServersScreen
+            servers={configServers}
+            selectedIndex={state.selectedConfigServer}
+            notice={state.notice}
+          />
+        ) : null}
 
-      <Box flexDirection={contentDirection} alignItems="flex-start" marginTop={1}>
-        <Box flexDirection="column" width={isCompact ? '100%' : '52%'}>
-          <Box borderStyle="doubleSingle" borderColor="blueBright" paddingX={1} flexDirection="column">
-            <Text bold color="blueBright">EVENT STREAM</Text>
-            <Box marginTop={1} flexDirection="column">
-              {events.length === 0 ? (
-                <Text color="gray">NO EVENTS YET</Text>
-              ) : (
-                events.map((event, index) => {
-                  const levelColor = event.level === 'success'
-                    ? 'greenBright'
-                    : event.level === 'error'
-                      ? 'redBright'
-                      : 'blueBright';
-                  const levelLabel = event.level === 'success'
-                    ? 'OK'
-                    : event.level === 'error'
-                      ? 'FAIL'
-                      : 'INFO';
+        {state.screen === 'config-types' ? (
+          <ConfigTypesScreen
+            types={serverTypes}
+            selectedIndex={state.selectedConfigType}
+            notice={state.notice}
+          />
+        ) : null}
 
-                  return (
-                    <Text key={`${event.timestamp}-${index}`} wrap="truncate-end">
-                      <Text color="gray">{index + 1}. </Text>
-                      <Text color="gray">[{event.timestamp}] </Text>
-                      <Text color={levelColor}>{levelLabel}</Text>
-                      <Text color="gray">{' -> '}</Text>
-                      <Text>{event.text}</Text>
-                    </Text>
-                  );
-                })
-              )}
-            </Box>
-          </Box>
-        </Box>
+        {state.screen === 'config-server-editor' && state.serverEditor ? (
+          <ServerEditorScreen model={state.serverEditor} notice={state.notice} error={editorError} />
+        ) : null}
 
-        <Box
-          flexDirection="column"
-          width={isCompact ? '100%' : '48%'}
-          marginLeft={isCompact ? 0 : 1}
-          marginTop={isCompact ? 1 : 0}
-        >
-          <Box borderStyle="doubleSingle" borderColor="yellowBright" paddingX={1} flexDirection="column">
-            <Text bold color="yellowBright">LIVE LOG TAIL</Text>
-            <Box marginTop={1} flexDirection="column">
-              {!selectedServer ? (
-                <Text color="gray">SELECT AN INSTANCE TO READ LOGS</Text>
-              ) : selectedLogs.length === 0 ? (
-                <Text color="gray">NO RECENT LOGS FOR {selectedServer.name.toUpperCase()}</Text>
-              ) : (
-                selectedLogs.slice(-8).map((line, index) => (
-                  <Text key={`${selectedServer.name}-${index}`} color="gray" wrap="truncate-end">
-                    <Text color="yellow">{String(index + 1).padStart(2, '0')}</Text>
-                    <Text color="gray"> | </Text>
-                    <Text>{line}</Text>
-                  </Text>
-                ))
-              )}
-            </Box>
-          </Box>
-        </Box>
+        {state.screen === 'config-type-editor' && state.typeEditor ? (
+          <TypeEditorScreen model={state.typeEditor} notice={state.notice} error={editorError} />
+        ) : null}
+
+        {state.screen === 'confirm-delete' && state.deleteIntent ? (
+          <ConfirmDeleteScreen intent={state.deleteIntent} notice={state.notice} />
+        ) : null}
       </Box>
     </Box>
   );
 };
 
 export function renderDashboard(): void {
-  render(<Dashboard />);
+  render(<DashboardRoot />);
 }

@@ -62,9 +62,22 @@ mc-cli console <server>       # Attach to console
 | `r` | Restart server |
 | `c` | Open console |
 | `b` | Create backup |
-| `e` | Open config editor |
+| `e` | Open Config Studio |
 | `Enter` | Refresh dashboard |
 | `q` | Quit |
+
+## Config Studio Controls
+
+| Key | Action |
+|-----|--------|
+| `1` | Open server registry |
+| `2` | Open type library |
+| `a` | Add entry |
+| `e` / `Enter` | Edit selected entry |
+| `d` | Delete selected entry |
+| `Tab` / `Shift+Tab` | Move between form fields |
+| `Ctrl+S` | Save form |
+| `Esc` | Back / cancel |
 
 ## Configuration
 
