@@ -3,11 +3,11 @@ import { Box, Text } from 'ink';
 
 type PanelTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 
-const BORDER_COLOR: Record<PanelTone, 'gray' | 'cyanBright' | 'greenBright' | 'yellowBright' | 'redBright'> = {
+const BORDER_COLOR: Record<PanelTone, 'gray' | 'yellowBright' | 'greenBright' | 'yellow' | 'redBright'> = {
   neutral: 'gray',
-  accent: 'cyanBright',
+  accent: 'yellowBright',
   success: 'greenBright',
-  warning: 'yellowBright',
+  warning: 'yellow',
   danger: 'redBright',
 };
 

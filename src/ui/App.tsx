@@ -966,9 +966,9 @@ const DashboardRoot: React.FC = () => {
         </>
       ) : (
         <>
-          <Box borderStyle="doubleSingle" borderColor="cyanBright" paddingX={1}>
+          <Box borderStyle="doubleSingle" borderColor="yellowBright" paddingX={1}>
             <Text>
-              <Text color="cyanBright" bold>MC-CLI COMMAND DECK</Text>
+              <Text color="yellowBright" bold>MC-CLI COMMAND DECK</Text>
               <Text color="gray"> | </Text>
               <Text color="whiteBright">{screenTitle}</Text>
               <Text color="gray"> | </Text>

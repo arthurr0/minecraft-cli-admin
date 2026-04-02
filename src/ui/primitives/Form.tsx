@@ -23,7 +23,7 @@ export function FieldRow({
   return (
     <Box flexDirection="column" marginBottom={1}>
       <Box>
-        <Text color={focused ? 'cyanBright' : 'gray'} bold={focused}>{label.padEnd(14)}</Text>
+        <Text color={focused ? 'yellowBright' : 'gray'} bold={focused}>{label.padEnd(14)}</Text>
         <Text color="gray">: </Text>
         <Text color={focused ? 'black' : 'white'} inverse={focused}>{clip}</Text>
       </Box>
@@ -42,7 +42,7 @@ export interface FormShellProps {
 export function FormShell({ title, children, help, error }: FormShellProps): React.ReactElement {
   return (
     <Box flexDirection="column">
-      <Text color="cyanBright" bold>{title}</Text>
+      <Text color="yellowBright" bold>{title}</Text>
       <Box marginTop={1} flexDirection="column">
         {children}
       </Box>

@@ -6,7 +6,7 @@ export interface EventFeedProps {
   events: EventRecord[];
 }
 
-function levelColor(level: EventRecord['level']): 'cyanBright' | 'greenBright' | 'redBright' {
+function levelColor(level: EventRecord['level']): 'yellowBright' | 'greenBright' | 'redBright' {
   if (level === 'success') {
     return 'greenBright';
   }
@@ -15,7 +15,7 @@ function levelColor(level: EventRecord['level']): 'cyanBright' | 'greenBright' |
     return 'redBright';
   }
 
-  return 'cyanBright';
+  return 'yellowBright';
 }
 
 export function EventFeed({ events }: EventFeedProps): React.ReactElement {

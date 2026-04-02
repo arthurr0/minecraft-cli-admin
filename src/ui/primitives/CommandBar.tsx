@@ -12,7 +12,7 @@ export const CommandBar = React.memo(function CommandBar({
 }: CommandBarProps): React.ReactElement {
   return (
     <Box borderStyle="single" borderColor="gray" paddingX={1}>
-      <Text color="cyanBright">{prompt} </Text>
+      <Text color="yellowBright">{prompt} </Text>
       <Text>{command}</Text>
       <Text color="gray">_</Text>
     </Box>

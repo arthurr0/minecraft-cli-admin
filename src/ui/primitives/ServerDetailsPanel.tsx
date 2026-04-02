@@ -87,7 +87,7 @@ export const ServerDetailsPanel = React.memo(function ServerDetailsPanel({
       <Box marginBottom={1}>
         <Text color="whiteBright" bold>{server.name}</Text>
         <Text color="gray"> (</Text>
-        <Text color="cyanBright">{server.config.type}</Text>
+        <Text color="yellowBright">{server.config.type}</Text>
         <Text color="gray"> | port </Text>
         <Text>{portLabel}</Text>
         <Text color="gray">)</Text>
@@ -117,11 +117,11 @@ export const ServerDetailsPanel = React.memo(function ServerDetailsPanel({
       <Box flexDirection="column" marginBottom={1}>
         <Text>
           <Text color="gray">Memory: </Text>
-          <Text color="cyanBright">{formatMemory(server.memoryMB)}</Text>
+          <Text color="yellowBright">{formatMemory(server.memoryMB)}</Text>
         </Text>
         <Text>
           <Text color="gray">CPU: </Text>
-          <Text color="cyanBright">{formatCpu(server.cpuPercent)}</Text>
+          <Text color="yellowBright">{formatCpu(server.cpuPercent)}</Text>
         </Text>
       </Box>
 

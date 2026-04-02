@@ -15,7 +15,7 @@ export function ShortcutStrip({ items }: ShortcutStripProps): React.ReactElement
     <Box borderStyle="single" borderColor="gray" paddingX={1}>
       {items.map((item, index) => (
         <Text key={`${item.key}-${item.label}`}>
-          <Text color="cyanBright" bold>{item.key}</Text>
+          <Text color="yellowBright" bold>{item.key}</Text>
           <Text color="gray"> {item.label}</Text>
           {index < items.length - 1 ? <Text color="gray">  |  </Text> : null}
         </Text>

@@ -21,15 +21,15 @@ export const StatusBar = React.memo(function StatusBar({
   );
 
   return (
-    <Box borderStyle="doubleSingle" borderColor="cyanBright" paddingX={1}>
+    <Box borderStyle="doubleSingle" borderColor="yellowBright" paddingX={1}>
       <Text>
-        <Text color="cyanBright" bold>MC-CLI DASHBOARD</Text>
+        <Text color="yellowBright" bold>MC-CLI DASHBOARD</Text>
         <Text color="gray"> | </Text>
         <Text color="whiteBright">{servers.length} servers</Text>
         <Text color="gray"> | </Text>
         <Text color="greenBright">{runningServers} running</Text>
         <Text color="gray"> | </Text>
-        <Text color="cyanBright">focus: {selectedServerName ?? 'none'}</Text>
+        <Text color="yellowBright">focus: {selectedServerName ?? 'none'}</Text>
         <Text color="gray"> | </Text>
         <Text color={processing ? 'yellowBright' : 'greenBright'}>{processing ? 'busy' : 'ready'}</Text>
         <Text color="gray"> | </Text>

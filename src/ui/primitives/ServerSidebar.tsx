@@ -59,7 +59,7 @@ export const ServerSidebar = React.memo(function ServerSidebar({
 
         return (
           <Box key={server.name} marginBottom={selected ? 0 : 0}>
-            <Text color={selected ? 'cyanBright' : 'gray'}>{selected ? '▶ ' : '  '}</Text>
+            <Text color={selected ? 'yellowBright' : 'gray'}>{selected ? '▶ ' : '  '}</Text>
             <Text color={selected ? 'whiteBright' : 'gray'} bold>{server.name}</Text>
             <Text color="gray"> (</Text>
             <Text color={statusColor(server.status)}>{statusLabel(server.status)}</Text>

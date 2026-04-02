@@ -3,10 +3,10 @@ import { Box, Text } from 'ink';
 import type { Notice } from '../core/types.js';
 
 const LEVEL_STYLE: Record<NonNullable<Notice['level']>, {
-  border: 'gray' | 'cyanBright' | 'greenBright' | 'redBright';
+  border: 'gray' | 'yellowBright' | 'greenBright' | 'redBright';
   tag: string;
 }> = {
-  info: { border: 'cyanBright', tag: 'INFO' },
+  info: { border: 'yellowBright', tag: 'INFO' },
   success: { border: 'greenBright', tag: 'OK' },
   error: { border: 'redBright', tag: 'ERR' },
 };

@@ -24,7 +24,7 @@ export function ConfigList({
 }: ConfigListProps): React.ReactElement {
   return (
     <Box flexDirection="column">
-      <Text color="cyanBright" bold>{title}</Text>
+      <Text color="yellowBright" bold>{title}</Text>
       {columns ? (
         <Text color="gray" bold>
           {'  '}

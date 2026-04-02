@@ -15,12 +15,12 @@ export function ConfigHomeScreen({ serverCount, typeCount, notice }: ConfigHomeS
       <Panel title="Config Studio" tone="accent">
         <Box flexDirection="column">
           <Text>
-            <Text color="cyanBright" bold>1.</Text>
+            <Text color="yellowBright" bold>1.</Text>
             <Text> Server registry </Text>
             <Text color="gray">({serverCount} entries)</Text>
           </Text>
           <Text>
-            <Text color="cyanBright" bold>2.</Text>
+            <Text color="yellowBright" bold>2.</Text>
             <Text> Type library </Text>
             <Text color="gray">({typeCount} profiles)</Text>
           </Text>
