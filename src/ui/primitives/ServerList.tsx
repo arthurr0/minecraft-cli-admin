@@ -50,37 +50,67 @@ function chunk<T>(items: T[], size: number): T[][] {
   return rows;
 }
 
-function formatMemory(memoryMB?: number): string {
-  return memoryMB === undefined ? '--' : `${memoryMB} MB`;
-}
-
-function formatCpu(cpuPercent?: number): string {
-  return cpuPercent === undefined ? '--' : `${cpuPercent}%`;
-}
-
-function formatTraffic(bytes?: number): string {
-  if (bytes === undefined) {
+function formatUptime(uptime?: string): string {
+  if (!uptime) {
     return '--';
   }
 
-  if (bytes < 1024) {
-    return `${bytes} B`;
+  const dayMatch = uptime.match(/^(\d+)d\s+(\d{2}):(\d{2}):\d{2}$/);
+  if (dayMatch) {
+    const days = dayMatch[1];
+    const hours = Number(dayMatch[2]);
+    const minutes = Number(dayMatch[3]);
+    return minutes === 0 ? `${days}d ${hours}h` : `${days}d ${hours}h ${minutes}m`;
   }
 
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
+  const timeMatch = uptime.match(/^(\d{2}):(\d{2}):\d{2}$/);
+  if (!timeMatch) {
+    return uptime;
   }
 
-  if (bytes < 1024 * 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  const hours = Number(timeMatch[1]);
+  const minutes = Number(timeMatch[2]);
+  const totalMinutes = (hours * 60) + minutes;
+
+  if (totalMinutes === 0) {
+    return '<1m';
   }
 
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  if (hours === 0) {
+    return `${totalMinutes}m`;
+  }
+
+  return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
+}
+
+function formatMemory(memoryMB?: number): string {
+  if (memoryMB === undefined) {
+    return '--';
+  }
+
+  if (memoryMB >= 1024) {
+    return `${(memoryMB / 1024).toFixed(1)} GB`;
+  }
+
+  const rounded = Math.round(memoryMB / 16) * 16;
+  return `${rounded} MB`;
+}
+
+function formatCpu(cpuPercent?: number): string {
+  return cpuPercent === undefined ? '--' : `${Math.round(cpuPercent)}%`;
 }
 
 function formatConnections(server: ServerInfo): string {
   const connections = server.network?.establishedConnections ?? server.network?.connections;
   return connections === undefined ? '--' : `${connections} live`;
+}
+
+function formatSockets(server: ServerInfo): string {
+  if (!server.network) {
+    return '--';
+  }
+
+  return `${server.network.listeningSockets} listen`;
 }
 
 function cardWidth(columns: number): string {
@@ -95,7 +125,11 @@ function cardWidth(columns: number): string {
   return '33%';
 }
 
-export function ServerList({ servers, selectedName, columns = 1 }: ServerListProps): React.ReactElement {
+export const ServerList = React.memo(function ServerList({
+  servers,
+  selectedName,
+  columns = 1,
+}: ServerListProps): React.ReactElement {
   if (servers.length === 0) {
     return <Text color="gray">No servers configured.</Text>;
   }
@@ -111,9 +145,6 @@ export function ServerList({ servers, selectedName, columns = 1 }: ServerListPro
             const selected = server.name === selectedName;
             const portLabel = server.config.port ? String(server.config.port) : '-';
             const borderColor = selected ? 'cyanBright' : statusColor(server.status);
-            const trafficLabel = server.network
-              ? `${formatTraffic(server.network.rxBytes)} down / ${formatTraffic(server.network.txBytes)} up`
-              : '--';
 
             return (
               <Box
@@ -146,7 +177,7 @@ export function ServerList({ servers, selectedName, columns = 1 }: ServerListPro
                   <Box flexDirection="column" marginTop={1}>
                     <Text wrap="truncate-end">
                       <Text color="gray">uptime </Text>
-                      <Text>{server.uptime ?? '--'}</Text>
+                      <Text>{formatUptime(server.uptime)}</Text>
                       <Text color="gray">  |  pid </Text>
                       <Text>{server.pid ? String(server.pid) : '--'}</Text>
                     </Text>
@@ -159,8 +190,8 @@ export function ServerList({ servers, selectedName, columns = 1 }: ServerListPro
                     <Text wrap="truncate-end">
                       <Text color="gray">connections </Text>
                       <Text>{formatConnections(server)}</Text>
-                      <Text color="gray">  |  </Text>
-                      <Text color={server.network ? 'cyanBright' : 'gray'}>{trafficLabel}</Text>
+                      <Text color="gray">  |  sockets </Text>
+                      <Text color={server.network ? 'cyanBright' : 'gray'}>{formatSockets(server)}</Text>
                     </Text>
                   </Box>
                 </Box>
@@ -171,4 +202,4 @@ export function ServerList({ servers, selectedName, columns = 1 }: ServerListPro
       ))}
     </Box>
   );
-}
+});

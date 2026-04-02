@@ -36,3 +36,8 @@ export interface TypeEditorModel {
   jvmFlags: string;
   focus: number;
 }
+
+export interface CommandState {
+  command: string;
+  mode: boolean;
+}

@@ -18,6 +18,13 @@ import {
   ServerEditorScreen,
   TypeEditorScreen,
 } from './screens/index.js';
+import {
+  CommandBar,
+  NoticeStrip,
+  ServerDetailsPanel,
+  ServerSidebar,
+  StatusBar,
+} from './primitives/index.js';
 
 const EVENT_LIMIT = 8;
 
@@ -45,7 +52,7 @@ const DashboardRoot: React.FC = () => {
   const [editorError, setEditorError] = useState<string | undefined>(undefined);
   const clearMessageRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const { servers, refresh, isLoading, error, lastUpdated } = useServers(2000);
+  const { servers, refresh, isLoading, error, lastUpdated } = useServers(5000);
   const {
     servers: configServers,
     serverTypes,
@@ -458,6 +465,35 @@ const DashboardRoot: React.FC = () => {
   useInput((input, key) => {
     const screen = state.screen;
 
+    if (state.commandMode) {
+      if (key.escape) {
+        dispatch({ type: 'toggleCommandMode' });
+        return;
+      }
+
+      if (key.return) {
+        // Execute command
+        if (state.command.trim()) {
+          // For now, just show notice
+          pushNotice(`Executed: ${state.command}`, 'info');
+        }
+        dispatch({ type: 'setCommand', command: '' });
+        dispatch({ type: 'toggleCommandMode' });
+        return;
+      }
+
+      if (key.backspace) {
+        dispatch({ type: 'setCommand', command: state.command.slice(0, -1) });
+        return;
+      }
+
+      if (input.length === 1) {
+        dispatch({ type: 'setCommand', command: `${state.command}${input}` });
+      }
+
+      return;
+    }
+
     if (screen === 'overview') {
       if (state.processing) {
         return;
@@ -468,20 +504,20 @@ const DashboardRoot: React.FC = () => {
         return;
       }
 
-      if (key.upArrow || key.downArrow || key.leftArrow || key.rightArrow) {
+      if (input === '/') {
+        dispatch({ type: 'toggleCommandMode' });
+        return;
+      }
+
+      if (key.upArrow || key.downArrow) {
         if (servers.length === 0) {
           return;
         }
 
         const currentIndex = selectedServer ? servers.findIndex((server) => server.name === selectedServer.name) : 0;
-        const delta = key.leftArrow
-          ? -1
-          : key.rightArrow
-            ? 1
-            : key.upArrow
-              ? -overviewColumns
-              : overviewColumns;
-        const nextIndex = Math.max(0, Math.min(servers.length - 1, currentIndex + delta));
+        const nextIndex = key.upArrow
+          ? Math.max(0, currentIndex - 1)
+          : Math.min(servers.length - 1, currentIndex + 1);
         dispatch({ type: 'setSelectedServerName', name: servers[nextIndex]?.name });
         return;
       }
@@ -884,67 +920,83 @@ const DashboardRoot: React.FC = () => {
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box borderStyle="doubleSingle" borderColor="cyanBright" paddingX={1}>
-        <Text>
-          <Text color="cyanBright" bold>MC-CLI COMMAND DECK</Text>
-          <Text color="gray"> | </Text>
-          <Text color="whiteBright">{screenTitle}</Text>
-          <Text color="gray"> | </Text>
-          <Text color="gray" wrap="truncate-end">{configPath}</Text>
-        </Text>
-      </Box>
-
-      <Box marginTop={1}>
-        {state.screen === 'overview' ? (
-          <OverviewScreen
+      {state.screen === 'overview' ? (
+        <>
+          <StatusBar
             servers={servers}
             selectedServerName={selectedServer?.name}
-            notice={state.notice}
-            isLoading={isLoading}
-            error={error}
             processing={state.processing}
-            runningServers={runningServers}
             lastUpdated={lastUpdated}
-            columns={overviewColumns}
           />
-        ) : null}
 
-        {state.screen === 'config-home' ? (
-          <ConfigHomeScreen
-            serverCount={configServerNames.length}
-            typeCount={configTypeNames.length}
-            notice={state.notice}
-          />
-        ) : null}
+          <Box flexDirection="row" marginTop={1} height={Math.max(10, stdout?.rows ? stdout.rows - 8 : 20)}>
+            <Box width="30%" borderStyle="single" borderColor="gray">
+              <ServerSidebar servers={servers} selectedName={selectedServer?.name} />
+            </Box>
+            <Box width="70%" borderStyle="single" borderColor="gray" marginLeft={1}>
+              <ServerDetailsPanel server={selectedServer} />
+            </Box>
+          </Box>
 
-        {state.screen === 'config-servers' ? (
-          <ConfigServersScreen
-            servers={configServers}
-            selectedIndex={state.selectedConfigServer}
-            notice={state.notice}
-          />
-        ) : null}
+          <Box marginTop={1}>
+            <NoticeStrip notice={state.notice} idleText="Ready. Use arrow keys to navigate, / to enter command mode." />
+          </Box>
 
-        {state.screen === 'config-types' ? (
-          <ConfigTypesScreen
-            types={serverTypes}
-            selectedIndex={state.selectedConfigType}
-            notice={state.notice}
-          />
-        ) : null}
+          <Box marginTop={1}>
+            <CommandBar command={state.command} />
+          </Box>
+        </>
+      ) : (
+        <>
+          <Box borderStyle="doubleSingle" borderColor="cyanBright" paddingX={1}>
+            <Text>
+              <Text color="cyanBright" bold>MC-CLI COMMAND DECK</Text>
+              <Text color="gray"> | </Text>
+              <Text color="whiteBright">{screenTitle}</Text>
+              <Text color="gray"> | </Text>
+              <Text color="gray" wrap="truncate-end">{configPath}</Text>
+            </Text>
+          </Box>
 
-        {state.screen === 'config-server-editor' && state.serverEditor ? (
-          <ServerEditorScreen model={state.serverEditor} notice={state.notice} error={editorError} />
-        ) : null}
+          <Box marginTop={1}>
+            {state.screen === 'config-home' ? (
+              <ConfigHomeScreen
+                serverCount={configServerNames.length}
+                typeCount={configTypeNames.length}
+                notice={state.notice}
+              />
+            ) : null}
 
-        {state.screen === 'config-type-editor' && state.typeEditor ? (
-          <TypeEditorScreen model={state.typeEditor} notice={state.notice} error={editorError} />
-        ) : null}
+            {state.screen === 'config-servers' ? (
+              <ConfigServersScreen
+                servers={configServers}
+                selectedIndex={state.selectedConfigServer}
+                notice={state.notice}
+              />
+            ) : null}
 
-        {state.screen === 'confirm-delete' && state.deleteIntent ? (
-          <ConfirmDeleteScreen intent={state.deleteIntent} notice={state.notice} />
-        ) : null}
-      </Box>
+            {state.screen === 'config-types' ? (
+              <ConfigTypesScreen
+                types={serverTypes}
+                selectedIndex={state.selectedConfigType}
+                notice={state.notice}
+              />
+            ) : null}
+
+            {state.screen === 'config-server-editor' && state.serverEditor ? (
+              <ServerEditorScreen model={state.serverEditor} notice={state.notice} error={editorError} />
+            ) : null}
+
+            {state.screen === 'config-type-editor' && state.typeEditor ? (
+              <TypeEditorScreen model={state.typeEditor} notice={state.notice} error={editorError} />
+            ) : null}
+
+            {state.screen === 'confirm-delete' && state.deleteIntent ? (
+              <ConfirmDeleteScreen intent={state.deleteIntent} notice={state.notice} />
+            ) : null}
+          </Box>
+        </>
+      )}
     </Box>
   );
 };

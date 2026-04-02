@@ -1,4 +1,4 @@
-import type { DeleteIntent, EventRecord, Notice, ServerEditorModel, TypeEditorModel } from './types.js';
+import type { DeleteIntent, EventRecord, Notice, ServerEditorModel, TypeEditorModel, CommandState } from './types.js';
 
 export type Screen =
   | 'overview'
@@ -20,6 +20,8 @@ export interface AppState {
   deleteIntent?: DeleteIntent;
   serverEditor?: ServerEditorModel;
   typeEditor?: TypeEditorModel;
+  command: string;
+  commandMode: boolean;
 }
 
 export type AppAction =
@@ -36,7 +38,9 @@ export type AppAction =
   | { type: 'clearServerEditor' }
   | { type: 'openTypeEditor'; model: TypeEditorModel }
   | { type: 'updateTypeEditor'; patch: Partial<TypeEditorModel> }
-  | { type: 'clearTypeEditor' };
+  | { type: 'clearTypeEditor' }
+  | { type: 'setCommand'; command: string }
+  | { type: 'toggleCommandMode' };
 
 export const initialState: AppState = {
   screen: 'overview',
@@ -49,6 +53,8 @@ export const initialState: AppState = {
   deleteIntent: undefined,
   serverEditor: undefined,
   typeEditor: undefined,
+  command: '',
+  commandMode: false,
 };
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -136,6 +142,17 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         typeEditor: undefined,
+      };
+    case 'setCommand':
+      return {
+        ...state,
+        command: action.command,
+      };
+    case 'toggleCommandMode':
+      return {
+        ...state,
+        commandMode: !state.commandMode,
+        command: !state.commandMode ? '' : state.command,
       };
     default:
       return state;

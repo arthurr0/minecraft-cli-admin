@@ -7,3 +7,7 @@ export { EventFeed, type EventFeedProps } from './EventFeed.js';
 export { LogTail, type LogTailProps } from './LogTail.js';
 export { ConfigList, type ConfigListProps, type ConfigListItem } from './ConfigList.js';
 export { FieldRow, FormShell, type FieldRowProps, type FormShellProps } from './Form.js';
+export { StatusBar, type StatusBarProps } from './StatusBar.js';
+export { ServerSidebar, type ServerSidebarProps } from './ServerSidebar.js';
+export { ServerDetailsPanel, type ServerDetailsPanelProps } from './ServerDetailsPanel.js';
+export { CommandBar, type CommandBarProps } from './CommandBar.js';
