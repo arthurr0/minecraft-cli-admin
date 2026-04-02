@@ -23,6 +23,7 @@ import {
   NoticeStrip,
   ServerDetailsPanel,
   ServerSidebar,
+  ShortcutStrip,
   StatusBar,
 } from './primitives/index.js';
 
@@ -929,7 +930,7 @@ const DashboardRoot: React.FC = () => {
             lastUpdated={lastUpdated}
           />
 
-          <Box flexDirection="row" marginTop={1} height={Math.max(10, stdout?.rows ? stdout.rows - 8 : 20)}>
+          <Box flexDirection="row" marginTop={1}>
             <Box width="30%" borderStyle="single" borderColor="gray">
               <ServerSidebar servers={servers} selectedName={selectedServer?.name} />
             </Box>
@@ -940,6 +941,23 @@ const DashboardRoot: React.FC = () => {
 
           <Box marginTop={1}>
             <NoticeStrip notice={state.notice} idleText="Ready. Use arrow keys to navigate, / to enter command mode." />
+          </Box>
+
+          <Box marginTop={1}>
+            <ShortcutStrip
+              items={[
+                { key: '↑↓', label: 'Navigate servers' },
+                { key: 'S', label: 'Start' },
+                { key: 'X', label: 'Stop' },
+                { key: 'R', label: 'Restart' },
+                { key: 'B', label: 'Backup' },
+                { key: 'C', label: 'Console' },
+                { key: 'E', label: 'Config' },
+                { key: '/', label: 'Command mode' },
+                { key: 'Enter', label: 'Refresh' },
+                { key: 'Q', label: 'Quit' },
+              ]}
+            />
           </Box>
 
           <Box marginTop={1}>
