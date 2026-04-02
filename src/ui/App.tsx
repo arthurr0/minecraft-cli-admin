@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Box, Text, render, useApp, useInput, useStdout } from 'ink';
 import { spawn } from 'child_process';
+import { readFileSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import type { ServerConfig, ServerTypeConfig } from '../types/config.js';
 import { backupService, screenService, serverService } from '../services/index.js';
 import { configService } from '../services/config.service.js';
 import { validateMemoryFormat, validatePath, validatePort, validateServerName, validateServerTypeName } from '../utils/validator.js';
 import { useConfig } from './hooks/useConfig.js';
 import { useServers } from './hooks/useServers.js';
-import { appReducer, initialState, type Screen } from './core/state.js';
+import { appReducer, type AppState, type Screen } from './core/state.js';
 import type { EventRecord, NoticeLevel, ServerEditorModel, TypeEditorModel } from './core/types.js';
 import {
   ConfigHomeScreen,
@@ -28,6 +31,32 @@ import {
 } from './primitives/index.js';
 
 const EVENT_LIMIT = 8;
+
+const SELECTED_SERVER_FILE = join(tmpdir(), 'mc-cli-selected-server');
+
+function getInitialSelectedServer(): string | undefined {
+  try {
+    const data = readFileSync(SELECTED_SERVER_FILE, 'utf8').trim();
+    return data || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const initialState: AppState = {
+  screen: 'overview',
+  selectedServerName: getInitialSelectedServer(),
+  selectedConfigServer: 0,
+  selectedConfigType: 0,
+  processing: false,
+  notice: undefined,
+  events: [],
+  deleteIntent: undefined,
+  serverEditor: undefined,
+  typeEditor: undefined,
+  command: '',
+  commandMode: false,
+};
 
 function timestamp(): string {
   return new Date().toLocaleTimeString('en-GB', { hour12: false });
@@ -209,6 +238,13 @@ const DashboardRoot: React.FC = () => {
     if (!exists) {
       pushNotice(`Server ${selectedServer.name} is not running`, 'error');
       return;
+    }
+
+    // Save selected server
+    try {
+      writeFileSync(SELECTED_SERVER_FILE, selectedServer.name);
+    } catch (err) {
+      // Ignore
     }
 
     exit();
